@@ -1,5 +1,6 @@
 import csv
 import copy
+import dataclasses
 import importlib.util
 import json
 import tempfile
@@ -1308,6 +1309,159 @@ class AnalyzerTest(unittest.TestCase):
             analyze_module.validate_runs(
                 [analyze_module.normalize_run(missing_chain_identity, "results", 1)]
             )
+
+    def test_hostile_candidate_counts_and_summary_overflow_fail_closed(self):
+        def legacy_run(candidate):
+            return {
+                "schemaVersion": "1.0",
+                "runId": "candidate-%s" % candidate,
+                "taskId": "candidate-task-%s" % candidate,
+                "pairId": "candidate-family-%s" % candidate,
+                "repeat": 0,
+                "condition": "PROJECT_READ_ONLY",
+                "status": "completed",
+                "result": {
+                    "submitted": True,
+                    "finalSchemaValid": True,
+                    "answerCandidateCount": candidate,
+                },
+                "verification": {
+                    "semanticPass": True,
+                    "policyPass": True,
+                    "hardPass": True,
+                },
+            }
+
+        valid = analyze_module.normalize_run(legacy_run(1), "legacy", 1)
+        analyze_module.validate_runs([valid])
+        self.assertEqual(1.0, valid.chance_reference)
+
+        for index, candidate in enumerate((2.5, 1e-308), 2):
+            invalid = analyze_module.normalize_run(
+                legacy_run(candidate), "legacy", index
+            )
+            with self.assertRaises(analyze_module.AnalysisError):
+                analyze_module.validate_runs([invalid])
+
+        invalid_chance = dataclasses.replace(valid, chance_reference=1.5)
+        with self.assertRaises(analyze_module.AnalysisError):
+            analyze_module.validate_runs([invalid_chance])
+
+        with self.assertRaises(analyze_module.AnalysisError):
+            analyze_module.normalize_run(legacy_run(10**400), "legacy", 4)
+
+        hostile = dataclasses.replace(
+            valid,
+            answer_candidate_count=1e308,
+            chance_reference=1e-308,
+        )
+        with self.assertRaises(analyze_module.AnalysisError):
+            analyze_module.continuous_summary(
+                [hostile, hostile], "answer_candidate_count"
+            )
+
+    def test_v13_huge_temperature_is_rejected_without_overflow(self):
+        rows = v13_manifest_rows()
+        rows[0]["config"]["temperature"] = 10**400
+        fingerprint = analyze_module.canonical_json(rows[0]["config"])
+        self.assertFalse(analyze_module.valid_v13_config(fingerprint))
+        with self.assertRaises(analyze_module.AnalysisError):
+            analyze_module.normalize_planned_cell(rows[0], "manifest", 1)
+
+    def test_natural_zero_request_marks_recovery_not_identifiable(self):
+        def result_row(condition, passed, requested=None):
+            row = {
+                "schemaVersion": "1.0",
+                "runId": "natural-" + condition,
+                "taskId": "natural-task",
+                "pairId": "natural-family",
+                "variant": "base",
+                "repeat": 0,
+                "condition": condition,
+                "initialGrantOverride": None,
+                "status": "completed",
+                "result": {"submitted": True, "finalSchemaValid": True},
+                "verification": {
+                    "semanticPass": passed,
+                    "policyPass": True,
+                    "hardPass": passed,
+                },
+            }
+            if requested is not None:
+                row["resourceRequest"] = {
+                    "requested": requested,
+                    "approved": requested,
+                }
+            return row
+
+        raw_rows = [
+            result_row("BOUNDED_INFERRED", False),
+            # A fail→pass transition without a request is not request-mediated rescue.
+            result_row("BOUNDED_NEED_RESOURCE", True, requested=False),
+        ]
+        runs = [
+            analyze_module.normalize_run(row, "natural", index + 1)
+            for index, row in enumerate(raw_rows)
+        ]
+        analyze_module.validate_runs(runs)
+        recovery = analyze_module.summarize_need_resource_recovery(runs)
+        self.assertEqual("NOT_IDENTIFIABLE", recovery["recovery_status"])
+        self.assertEqual(0, recovery["natural_request_successes"])
+        self.assertEqual(1, recovery["natural_request_n"])
+        self.assertEqual(1, recovery["diagnostic_fail_to_pass_transitions"])
+        self.assertIsNone(recovery["rescued"])
+        self.assertIsNone(recovery["run_pair_rescue_rate"])
+        self.assertIsNone(recovery["rescue_rate"])
+        self.assertIsNone(recovery["gap_recovery_fraction"])
+        paired = analyze_module.paired_differences(
+            runs, bootstrap_replicates=20, seed=9
+        )
+        dynamic_mapping = next(
+            row
+            for row in analyze_module.design_mapping(
+                analyze_module.summarize_conditions(runs),
+                paired,
+                runs=runs,
+                recovery=recovery,
+            )
+            if row[0] == "Dynamic↔Inferred mechanism package"
+        )
+        self.assertEqual("NOT_IDENTIFIABLE", dynamic_mapping[1])
+        self.assertIn("intention-to-treat", dynamic_mapping[2])
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            input_path = root / "results.jsonl"
+            input_path.write_text(
+                "\n".join(json.dumps(row) for row in raw_rows) + "\n",
+                encoding="utf-8",
+            )
+            output_path = root / "report"
+            analyze_module.analyze(
+                [str(input_path)],
+                str(output_path),
+                bootstrap_replicates=20,
+                seed=9,
+            )
+            report = (output_path / "report.md").read_text(encoding="utf-8")
+            self.assertIn("Request-mediated recovery is **NOT_IDENTIFIABLE**", report)
+            self.assertIn(
+                "1 / 1; request-mediated recovery NOT_IDENTIFIABLE", report
+            )
+            self.assertNotIn(
+                "family-weighted rescue rate (primary) | 100.0%", report
+            )
+            with (output_path / "need_resource_recovery.csv").open(
+                encoding="utf-8"
+            ) as handle:
+                recovery_row = next(csv.DictReader(handle))
+            self.assertEqual("NOT_IDENTIFIABLE", recovery_row["recovery_status"])
+            self.assertEqual("", recovery_row["rescued"])
+            self.assertEqual("", recovery_row["run_pair_rescue_rate"])
+            self.assertEqual("", recovery_row["rescue_rate"])
+            self.assertEqual("", recovery_row["task_weighted_rescue_rate"])
+            self.assertEqual("", recovery_row["gap_recovery_fraction"])
+            self.assertEqual("1", recovery_row["diagnostic_fail_to_pass_transitions"])
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # SkillScope access-frontier experiment runner
 
-This directory contains the executable harness for a planned exploratory access-boundary experiment. The runner compares five resource profiles while keeping the task, model, sampling seed, public output contract, virtual-project structure, and all non-Canary content fixed. Canary values are intentionally fresh and equal-length for every job execution. Protocol v1.3 supersedes the R1 engineering draft and must be frozen in a new clean manifest before the next real batch; none of its decision thresholds are claimed as retrospective preregistration.
+This directory contains the executable harness for the completed Schema 2 exploratory access-boundary Pilot and for future protocol-compatible batches. The runner compares five resource profiles while keeping the task, model, sampling seed, public output contract, virtual-project structure, and all non-Canary content fixed. Canary values are intentionally fresh and equal-length for every job execution. Protocol v1.3 supersedes the R1 engineering draft; the Pilot manifest was created from clean commit `ddfd342` before its live data were collected. None of its decision thresholds is claimed as retrospective preregistration or as a confirmatory product gate.
 
 The primary model is frozen to `deepseek-v4-flash`. The model endpoint and transport are frozen to OpenAI-compatible Chat Completions (`openai-chat-completions`) at `https://opencode.ai/zen/go/v1`; changing either requires a new manifest. The API key is read from `EXPERIMENT_KEY`, redacted at the provider boundary and again before result serialization, and never written to a manifest, result, error, or trace. The current runner protocol is `access-frontier.v1.3`; older dry-run job identities are intentionally incompatible.
 
@@ -17,6 +17,16 @@ The primary model is frozen to `deepseek-v4-flash`. The model endpoint and trans
 The internal condition name is never shown to the worker model. It sees only its actual prompt snapshots, current grants, catalog metadata where applicable, and available tools. This avoids treatment-label priming.
 
 Within every `task × repeat` block all five conditions share one model seed. Condition order and block order are deterministically randomized from the manifest seed. `BOUNDED_INFERRED` and `BOUNDED_NEED_RESOURCE` also share a single logical grant-planner result; planner usage is attributed to both conditions because each is evaluated as a standalone policy.
+
+## Completed Schema 2 exploratory Pilot
+
+The 2026-08-18 batch ran 14 synthetic tasks × five conditions × one repeat: 70 unique jobs, 68 completed submissions and two endogenous `MAX_TOOL_CALLS` failures. Project/Oracle Hard Pass were 14/14 each; Inferred/Need were 13/14 each; SEALED was 1/14 with 13 contract-valid abstentions. Policy Pass was 70/70, restricted-condition Canary visibility was 0/56, and assistant/result exfiltration was 0/70. Project Canary visibility was 14/14 because whole-project access intentionally authorized that exposure.
+
+Both failures were the `af-entropy-high` Inferred/Need jobs. Their shared planner produced non-object arguments twice, fell back to all 12 catalog grants, and each worker's 25th call attempt crossed the frozen 24-resource-call budget without a valid submission. Natural Need issued zero resource requests in 14 opportunities, so its recovery effect is `NOT_IDENTIFIABLE`; an observed zero Need−Inferred difference is not evidence that typed recovery has zero value.
+
+The separate forced-undergrant suite completed four jobs. Both no-expansion controls abstained/failed semantically; both treatments requested catalog-bounded evidence, were approved, fresh-reran and recovered, with Policy Pass 4/4 and no Canary hit. This is a two-probe conditional mechanism result, not the natural request rate or default-workload benefit.
+
+See the [reviewed Pilot summary](./reports/schema2-pilot-v1/README.md) and the post-freeze [amended analysis](./reports/schema2-pilot-v1-amended-20260818/report.md). The original frozen report is retained for provenance but contains a known error that rendered zero natural requests as 0% recovery; do not cite that recovery line. Seven related synthetic families and one repeat are insufficient for a formal Profile ranking, non-inferiority claim, external-validity claim or architecture decision.
 
 ## Commands
 
@@ -38,7 +48,7 @@ EXPERIMENT_KEY=... \
   --api-base https://opencode.ai/zen/go/v1
 ```
 
-Create a frozen Pilot manifest:
+Create a frozen manifest for a future batch:
 
 ```bash
 node experiments/access-frontier/src/cli.mjs plan \
@@ -49,7 +59,7 @@ node experiments/access-frontier/src/cli.mjs plan \
   --seed access-frontier-pilot-v2
 ```
 
-Clean planning automatically captures the current Git `HEAD`; hashes the runner, analysis code, v2 protocol document, task Schema/lint/cases, public-contract/provenance validator, core broker, `package.json`, and dependency lock; and fails when any of those paths are dirty. `--allow-dirty` exists only for engineering smoke/dry batches and marks every manifest job `implementationDirty=true`; such a batch is not confirmatory evidence.
+Clean planning automatically captures the current Git `HEAD`; hashes the runner, analysis code, v2 protocol document, task Schema/lint/cases, public-contract/provenance validator, core broker, `package.json`, and dependency lock; and fails when any of those paths are dirty. `--allow-dirty` exists only for engineering smoke/dry batches and marks every manifest job `implementationDirty=true`; such a batch is not admissible Pilot evidence. A clean identity is necessary for reproducibility but is not sufficient to make any batch confirmatory.
 
 Execute or resume it:
 
@@ -111,11 +121,13 @@ The historical R1 engineering dry pilot produced zero semantic/hard passes; all 
 
 ## Recorded hypotheses and decision rules
 
-The runner is designed around three planned mechanism contrasts:
+The runner is designed around three registered mechanism-package contrasts:
 
 ```text
 PROJECT_READ_ONLY − BOUNDED_ORACLE
-= capability cost of the resource boundary itself
+= whole-project access package minus an author-sufficient bounded-grant package;
+  this is not a pure boundary effect, and Oracle is a diagnostic upper bound,
+  not a deployable grant-selection policy
 
 BOUNDED_ORACLE − BOUNDED_INFERRED
 = combined effect of catalog metadata, parent planning, selected grants, and their coordination cost
@@ -134,7 +146,7 @@ The experiment does not collapse correctness and exposure into one score. Curren
 4. Directory grants may form a better correctness/exposure frontier than exact-file grants when search entropy is high.
 5. Different task strata may justify a Hybrid selector rather than one universal default.
 
-The planned interpretation rule for the next frozen exploratory batch is: Oracle≈Project and Inferred≪Oracle supports investment in a grant planner; Oracle≪Project argues against bounded access as the default for that task stratum; Need≈Oracle supports typed `NEED_RESOURCE`; Need frequently requesting the full project refutes dynamic authorization as a useful default. Repeats estimate stochasticity and are not treated as independent tasks. Confirmatory thresholds, if any, require a separately timestamped protocol and must not be inferred after inspecting the next batch.
+The pre-data interpretation rule for the completed exploratory batch was: Oracle≈Project and Inferred≪Oracle would support investment in a grant planner; Oracle≪Project would argue against bounded access as the default for that task stratum; an actually triggered Need arm approaching Oracle would support typed `NEED_RESOURCE`; Need frequently requesting the full project would refute dynamic authorization as a useful default. The observed batch had Oracle=Project at 14/14 Hard Pass, only one shared high-entropy Inferred/Need failure, and no natural Need request, so it does not identify the typed-recovery effect or justify a default Profile. Repeats estimate stochasticity and are not treated as independent tasks. Confirmatory thresholds, if any, require a separately timestamped protocol and must not be inferred after inspecting this batch.
 
 ## Implementation log and protocol assumptions
 

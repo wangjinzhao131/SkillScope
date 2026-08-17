@@ -79,14 +79,16 @@ node_modules/.bin/pi \
 
 ## 已获得的证据
 
-- 真实 `deepseek-v4-flash`：源码宿主完整 E2E 和“npm tarball → 全新安装 → 真实父 Pi → 已安装 Extension → 真实子 Session”均为 `SUCCESS`。
+- 真实 `deepseek-v4-flash`：源码宿主完整 E2E 和一次“npm tarball → 全新安装 → 真实父 Pi → 已安装 Extension → 真实子 Session”历史手工链均为 `SUCCESS`。后者的自动重放脚本在 180 秒和 300 秒外层上限下都超时，尚不能称为稳定的一键复现入口。
 - 新 Trace E2E 断言：授权 exact-file 是唯一物理物化/实际读取/模型可见资源；项目根枚举被拒绝；业务路径、诊断正文和 API key 未以明文进入外置 `metadata-only-v1` Trace。仓库中的审核版合成 E2E 摘要另行保留了非敏感 fixture 诊断，不能与 Trace 隐私边界混为一谈。
 - 独立安全门禁覆盖 7,168 条 hostile paths、1,024 个前缀碰撞及确定性 broker/Pi/Trace 攻击用例。
 - 第一轮 70-job access-frontier dry pilot 提前证伪了隐藏 exact code/facts 评分设计；该批被明确降级为 measurement failure，没有被包装成 SkillScope 能力结论。新版公开 response contract 与 provenance 行映射由此产生。
+- 从 clean commit `ddfd342` 运行的 Schema 2 探索性 Pilot 已完成 70 个 `deepseek-v4-flash` jobs：Project/Oracle Hard Pass 均为 14/14，Inferred/Need 均为 13/14，SEALED 为 1/14 且另有 13 次规范 abstention；70/70 Policy Pass，受限 Canary 可见 0/56，exfiltration 0/70。两个失败都是 high-entropy 任务在 planner fallback-all 后，第 25 次调用尝试触发冻结的 24-call 预算终止。
+- 自然 Need 条件 0/14 发出资源请求，所以动态恢复效果是 `NOT_IDENTIFIABLE`，不是 0%。独立 forced-undergrant 的两个构造机会中，两个 control 均失败/abstain，两个 treatment 均 request、获批、fresh rerun 并恢复；这只证明条件化机制链可行，不能冒充自然 workload 收益。
 
-截至冻结基线，尚无 `access-frontier.v1.3` / Schema 2 的 live 结果，因此还不能给访问 Profile 排名，也不能据此作正式架构结论。下一批只是一轮预先协议化的探索性 Pilot。
+这些结果只有 7 个合成 counterfactual families、1 个 repeat，缺少 repository holdout、普通 Subagent、Prompt-only/Resource-only 和 confirmatory margin/power。它们不能给访问 Profile 作正式排名，也不能据此作产品架构结论。
 
-详细证据见 [实验日志](./docs/research/实验日志.md)、[插件实现独立审计](./docs/research/插件实现独立审计.md) 和 [dry-pilot 报告](./experiments/access-frontier/reports/dry-r1/README.md)。
+详细证据见 [Schema 2 Pilot 人工复核](./experiments/access-frontier/reports/schema2-pilot-v1/README.md)、[实验日志](./docs/research/实验日志.md)、[插件实现独立审计](./docs/research/插件实现独立审计.md) 和 [R1 dry-pilot 报告](./experiments/access-frontier/reports/dry-r1/README.md)。
 
 ## 安全与解释边界
 

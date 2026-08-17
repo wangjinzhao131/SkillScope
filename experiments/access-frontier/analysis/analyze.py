@@ -319,6 +319,27 @@ def runner_sha256(value: Any) -> str:
     return "sha256:" + hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
+def finite_number(value: Any) -> bool:
+    """Return whether a value has a finite representation in analyzer arithmetic."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    try:
+        converted = float(value)
+    except (OverflowError, TypeError, ValueError):
+        return False
+    return math.isfinite(converted)
+
+
+def finite_integer(value: Any) -> bool:
+    """Return whether a value is a finite, exactly integral analyzer number."""
+    if not finite_number(value):
+        return False
+    try:
+        return float(value).is_integer()
+    except (OverflowError, TypeError, ValueError):
+        return False
+
+
 def valid_v13_config(fingerprint: str) -> bool:
     try:
         value = json.loads(fingerprint)
@@ -326,11 +347,7 @@ def valid_v13_config(fingerprint: str) -> bool:
         return False
     if not isinstance(value, Mapping) or set(value) != V13_CONFIG_FIELDS:
         return False
-    if (
-        not isinstance(value["temperature"], (int, float))
-        or isinstance(value["temperature"], bool)
-        or not math.isfinite(float(value["temperature"]))
-    ):
+    if not finite_number(value["temperature"]):
         return False
     for field in ("maxTurns", "maxToolCalls", "maxTokens", "timeoutMs", "requestTimeoutMs"):
         if isinstance(value[field], bool) or not isinstance(value[field], int) or value[field] < 1:
@@ -1137,6 +1154,7 @@ def validate_runs(runs: Sequence[Run]) -> None:
         for label, value in (
             ("executionOrdinal", run.execution_ordinal),
             ("answerCandidateCount", run.answer_candidate_count),
+            ("chanceReference", run.chance_reference),
             ("schemaRepairCount", run.schema_repair_count),
             ("promptTokens", run.prompt_tokens),
             ("completionTokens", run.completion_tokens),
@@ -1153,6 +1171,23 @@ def validate_runs(runs: Sequence[Run]) -> None:
                 problems.append(
                     "%s: %s %r is outside the supported finite telemetry domain"
                     % (location, label, value)
+                )
+        if run.answer_candidate_count is not None:
+            if (
+                not finite_integer(run.answer_candidate_count)
+                or run.answer_candidate_count < 1
+            ):
+                problems.append(
+                    "%s: answerCandidateCount must be an integer >= 1" % location
+                )
+            if (
+                run.chance_reference is None
+                or not finite_number(run.chance_reference)
+                or not 0 <= run.chance_reference <= 1
+            ):
+                problems.append(
+                    "%s: derived 1/K chance reference must be finite and within [0, 1]"
+                    % location
                 )
         if run.protocol_version and run.protocol_version not in SUPPORTED_PROTOCOL_VERSIONS:
             problems.append(
@@ -1187,7 +1222,7 @@ def validate_runs(runs: Sequence[Run]) -> None:
                 )
             if (
                 run.execution_ordinal is None
-                or not float(run.execution_ordinal).is_integer()
+                or not finite_integer(run.execution_ordinal)
                 or run.execution_ordinal < 1
             ):
                 problems.append(
@@ -1237,7 +1272,7 @@ def validate_runs(runs: Sequence[Run]) -> None:
             if run.answer_candidate_count is None:
                 problems.append("%s: v1.3 result is missing answerCandidateCount" % location)
             elif (
-                not float(run.answer_candidate_count).is_integer()
+                not finite_integer(run.answer_candidate_count)
                 or run.answer_candidate_count < 3
             ):
                 problems.append(
@@ -1715,7 +1750,7 @@ def validate_manifest(cells: Sequence[PlannedCell]) -> None:
             ):
                 if not value:
                     problems.append("%s: v1.3 manifest is missing %s" % (location, label))
-            if cell.order_index is None or not float(cell.order_index).is_integer():
+            if cell.order_index is None or not finite_integer(cell.order_index):
                 problems.append("%s: v1.3 manifest requires integer orderIndex" % location)
             if cell.calculated_job_id != cell.job_id:
                 problems.append(
@@ -1734,7 +1769,7 @@ def validate_manifest(cells: Sequence[PlannedCell]) -> None:
             if (
                 cell.expected_answer_candidate_count is None
                 or cell.expected_answer_candidate_count < 3
-                or not float(cell.expected_answer_candidate_count).is_integer()
+                or not finite_integer(cell.expected_answer_candidate_count)
             ):
                 problems.append(
                     "%s: task response contract needs at least two substantive codes "
@@ -1849,7 +1884,7 @@ def validate_manifest(cells: Sequence[PlannedCell]) -> None:
         if len(sources) != 1:
             problems.append("v1.3 identity validation requires one complete manifest file")
         order_indices = [cell.order_index for cell in cells]
-        if all(value is not None and float(value).is_integer() for value in order_indices):
+        if all(value is not None and finite_integer(value) for value in order_indices):
             integer_order = [int(value) for value in order_indices if value is not None]
             if integer_order != list(range(len(cells))):
                 problems.append(
@@ -1977,7 +2012,17 @@ def numeric_values(runs: Iterable[Run], attribute: str) -> List[float]:
     for run in runs:
         value = getattr(run, attribute)
         if value is not None:
-            values.append(float(value))
+            try:
+                converted = float(value)
+            except (OverflowError, TypeError, ValueError) as exc:
+                raise AnalysisError(
+                    "numeric value for %s is outside analyzer arithmetic" % attribute
+                ) from exc
+            if not math.isfinite(converted):
+                raise AnalysisError(
+                    "numeric value for %s is non-finite" % attribute
+                )
+            values.append(converted)
     return values
 
 
@@ -1993,12 +2038,30 @@ def binary_summary(runs: Sequence[Run], attribute: str) -> Dict[str, Any]:
 
 def continuous_summary(runs: Sequence[Run], attribute: str) -> Dict[str, Any]:
     values = numeric_values(runs, attribute)
+    if not values:
+        return {"n": 0, "mean": None, "median": None, "p95": None, "sum": None}
+    try:
+        mean = statistics.fmean(values)
+        median = statistics.median(values)
+        p95 = percentile(values, 0.95)
+        total = sum(values)
+    except (OverflowError, statistics.StatisticsError) as exc:
+        raise AnalysisError(
+            "continuous summary overflow for %s; reject hostile/out-of-domain telemetry"
+            % attribute
+        ) from exc
+    outputs = (mean, median, p95, total)
+    if any(value is not None and not math.isfinite(value) for value in outputs):
+        raise AnalysisError(
+            "continuous summary is non-finite for %s; reject hostile/out-of-domain telemetry"
+            % attribute
+        )
     return {
         "n": len(values),
-        "mean": statistics.fmean(values) if values else None,
-        "median": statistics.median(values) if values else None,
-        "p95": percentile(values, 0.95),
-        "sum": sum(values) if values else None,
+        "mean": mean,
+        "median": median,
+        "p95": p95,
+        "sum": total,
     }
 
 
@@ -2392,11 +2455,66 @@ def summarize_need_resource_recovery(runs: Sequence[Run]) -> Dict[str, Any]:
         if triple_families
         else None
     )
-    gap_recovery_fraction = (
+    raw_gap_recovery_fraction = (
         dynamic_gain / oracle_gap
         if oracle_gap is not None and oracle_gap > 0 and dynamic_gain is not None
         else None
     )
+
+    suite_counts: Dict[str, int] = defaultdict(int)
+    for run in dynamic_runs:
+        suite_counts[initial_grant_suite_mode(run.initial_grant_override_fingerprint)] += 1
+    suite_modes = {mode for mode, count in suite_counts.items() if count}
+    natural_dynamic_runs = [
+        run
+        for run in dynamic_runs
+        if initial_grant_suite_mode(run.initial_grant_override_fingerprint) == "natural"
+    ]
+    natural_request_values = [
+        run.need_resource_requested
+        for run in natural_dynamic_runs
+        if run.need_resource_requested is not None
+    ]
+    natural_request_count = sum(1 for value in natural_request_values if value)
+    if suite_modes == {"natural"} and natural_request_count == 0:
+        recovery_status = "NOT_IDENTIFIABLE"
+        if natural_request_values:
+            recovery_reason = (
+                "No natural BOUNDED_NEED_RESOURCE run requested a resource "
+                "(%d measured run(s)); Dynamic↔Inferred semantic transitions do not identify "
+                "request-mediated recovery." % len(natural_request_values)
+            )
+        else:
+            recovery_reason = (
+                "Natural BOUNDED_NEED_RESOURCE runs have no measured resource-request event; "
+                "request-mediated recovery is not identifiable."
+            )
+    elif len(suite_modes) > 1:
+        recovery_status = "NOT_IDENTIFIABLE"
+        recovery_reason = (
+            "Natural, forced, or legacy suite modes are mixed; pooled semantic transitions "
+            "cannot identify one request-mediated recovery estimand."
+        )
+    elif suite_modes == {"natural"}:
+        recovery_status = "IDENTIFIABLE"
+        recovery_reason = (
+            "%d natural BOUNDED_NEED_RESOURCE run(s) requested a resource; paired recovery "
+            "diagnostics are observational within the randomized condition package."
+            % natural_request_count
+        )
+    elif suite_modes == {"forced"}:
+        recovery_status = "FORCED_OPPORTUNITY_DIAGNOSTIC"
+        recovery_reason = (
+            "The suite engineered missing-evidence opportunities; recovery describes the forced "
+            "opportunity estimand, not the natural request rate."
+        )
+    else:
+        recovery_status = "LEGACY_DIAGNOSTIC"
+        recovery_reason = (
+            "Legacy rows do not identify a natural-versus-forced initial-grant suite; retain these "
+            "values only as compatibility diagnostics."
+        )
+    recovery_identifiable = recovery_status != "NOT_IDENTIFIABLE"
 
     request_values = [run.need_resource_requested for run in dynamic_runs]
     measured_requests = [value for value in request_values if value is not None]
@@ -2408,15 +2526,45 @@ def summarize_need_resource_recovery(runs: Sequence[Run]) -> Dict[str, Any]:
     ]
     approvals = sum(1 for value in approval_values if value)
     return {
+        "recovery_status": recovery_status,
+        "recovery_reason": recovery_reason,
+        "natural_dynamic_runs": len(natural_dynamic_runs),
+        "forced_dynamic_runs": suite_counts.get("forced", 0),
+        "legacy_or_invalid_dynamic_runs": suite_counts.get("invalid", 0),
+        "natural_request_successes": natural_request_count,
+        "natural_request_n": len(natural_request_values),
+        "natural_request_rate": (
+            natural_request_count / len(natural_request_values)
+            if natural_request_values
+            else None
+        ),
         "semantic_pairs": semantic_pairs,
         "semantic_tasks": len(semantic_by_task),
         "inferred_failure_opportunities": opportunities,
         "opportunity_tasks": len(task_rescue_rates),
         "opportunity_families": len(family_rescue_rates),
-        "rescued": rescued,
-        "run_pair_rescue_rate": rescued / opportunities if opportunities else None,
-        "rescue_rate": statistics.fmean(family_rescue_rates) if family_rescue_rates else None,
+        "rescued": rescued if recovery_identifiable else None,
+        "run_pair_rescue_rate": (
+            rescued / opportunities if recovery_identifiable and opportunities else None
+        ),
+        "rescue_rate": (
+            statistics.fmean(family_rescue_rates)
+            if recovery_identifiable and family_rescue_rates
+            else None
+        ),
         "task_weighted_rescue_rate": (
+            statistics.fmean(task_rescue_rates.values())
+            if recovery_identifiable and task_rescue_rates
+            else None
+        ),
+        "diagnostic_fail_to_pass_transitions": rescued,
+        "diagnostic_run_pair_transition_rate": (
+            rescued / opportunities if opportunities else None
+        ),
+        "diagnostic_family_transition_rate": (
+            statistics.fmean(family_rescue_rates) if family_rescue_rates else None
+        ),
+        "diagnostic_task_transition_rate": (
             statistics.fmean(task_rescue_rates.values()) if task_rescue_rates else None
         ),
         "regressions": regressions,
@@ -2439,7 +2587,10 @@ def summarize_need_resource_recovery(runs: Sequence[Run]) -> Dict[str, Any]:
         "triple_complete_families": len(triple_families),
         "oracle_inferred_gap": oracle_gap,
         "dynamic_inferred_gain": dynamic_gain,
-        "gap_recovery_fraction": gap_recovery_fraction,
+        "gap_recovery_fraction": (
+            raw_gap_recovery_fraction if recovery_identifiable else None
+        ),
+        "diagnostic_three_arm_gap_ratio": raw_gap_recovery_fraction,
     }
 
 
@@ -2570,6 +2721,7 @@ def design_mapping(
     summaries: Sequence[Mapping[str, Any]],
     paired: Sequence[Mapping[str, Any]],
     runs: Optional[Sequence[Run]] = None,
+    recovery: Optional[Mapping[str, Any]] = None,
 ) -> List[Tuple[str, str, str]]:
     mappings: List[Tuple[str, str, str]] = []
     contract_probe = find_contrast(paired, "boundary_cost", "semantic_pass")
@@ -2725,7 +2877,19 @@ def design_mapping(
         )
 
     dynamic = find_contrast(paired, "resource_request_value", "semantic_pass")
-    if dynamic is None or dynamic["estimate"] is None:
+    if recovery is None and runs is not None:
+        recovery = summarize_need_resource_recovery(runs)
+    if recovery is not None and recovery.get("recovery_status") == "NOT_IDENTIFIABLE":
+        mappings.append(
+            (
+                "Dynamic↔Inferred mechanism package",
+                "NOT_IDENTIFIABLE",
+                "%s Any paired Dynamic↔Inferred contrast is retained only as an "
+                "intention-to-treat condition-package diagnostic because the request mechanism "
+                "was not observed to activate." % recovery.get("recovery_reason", ""),
+            )
+        )
+    elif dynamic is None or dynamic["estimate"] is None:
         mappings.append(("Dynamic↔Inferred mechanism package", "Inconclusive", "No complete Dynamic↔Inferred semantic-pass pairs."))
     elif metric_complete_family_count(dynamic) < MIN_MAPPING_FAMILIES:
         mappings.append(
@@ -3238,7 +3402,14 @@ def make_report(
             "",
         ]
     )
-    if recovery["gap_recovery_fraction"] is not None:
+    if recovery["recovery_status"] == "NOT_IDENTIFIABLE":
+        lines.append(
+            "Request-mediated recovery is **NOT_IDENTIFIABLE**. %s Complete "
+            "Dynamic↔Inferred opportunity and transition counts are retained below and in CSV as "
+            "paired condition-package diagnostics; they are not estimates of recovery caused by a "
+            "resource request." % recovery["recovery_reason"]
+        )
+    elif recovery["gap_recovery_fraction"] is not None:
         lines.append(
             "The exploratory semantic recovery fraction is **%.1f%%**: "
             "`(Dynamic − Inferred) / (Oracle − Inferred)`. It is a ratio of point estimates, may "
@@ -3251,38 +3422,62 @@ def make_report(
             "Semantic recovery fraction is `NA`: the paired Oracle − Inferred semantic-pass gap is missing or "
             "non-positive. Request rates and counts remain available above and in CSV."
         )
+    if recovery["recovery_status"] == "NOT_IDENTIFIABLE":
+        pair_transition_value = "%d / %d; request-mediated recovery NOT_IDENTIFIABLE" % (
+            recovery["diagnostic_fail_to_pass_transitions"],
+            recovery["inferred_failure_opportunities"],
+        )
+        family_recovery_value = "NOT_IDENTIFIABLE across %d opportunity family cluster(s)" % (
+            recovery["opportunity_families"],
+        )
+        task_recovery_value = "NOT_IDENTIFIABLE across %d opportunity task(s)" % (
+            recovery["opportunity_tasks"],
+        )
+    else:
+        pair_transition_value = format_rate(
+            recovery["rescued"],
+            recovery["inferred_failure_opportunities"],
+            recovery["run_pair_rescue_rate"],
+        )
+        family_recovery_value = "%s across %d opportunity family cluster(s)" % (
+            format_percent(recovery["rescue_rate"]),
+            recovery["opportunity_families"],
+        )
+        task_recovery_value = "%s across %d opportunity task(s)" % (
+            format_percent(recovery["task_weighted_rescue_rate"]),
+            recovery["opportunity_tasks"],
+        )
     lines.extend(
         [
             "",
             markdown_table(
                 ("Recovery diagnostic", "Value"),
                 (
+                    ("request-mediated recovery status", recovery["recovery_status"]),
+                    ("status reason", recovery["recovery_reason"]),
+                    (
+                        "natural / forced / legacy-or-invalid Dynamic runs",
+                        "%d / %d / %d"
+                        % (
+                            recovery["natural_dynamic_runs"],
+                            recovery["forced_dynamic_runs"],
+                            recovery["legacy_or_invalid_dynamic_runs"],
+                        ),
+                    ),
                     ("complete Dynamic↔Inferred semantic pairs", recovery["semantic_pairs"]),
                     ("tasks contributing those pairs", recovery["semantic_tasks"]),
                     ("Inferred-failure opportunities", recovery["inferred_failure_opportunities"]),
                     (
-                        "rescued run-pairs / opportunity",
-                        format_rate(
-                            recovery["rescued"],
-                            recovery["inferred_failure_opportunities"],
-                            recovery["run_pair_rescue_rate"],
-                        ),
+                        "fail→pass Dynamic↔Inferred transitions / opportunity",
+                        pair_transition_value,
                     ),
                     (
                         "family-weighted rescue rate (primary)",
-                        "%s across %d opportunity family cluster(s)"
-                        % (
-                            format_percent(recovery["rescue_rate"]),
-                            recovery["opportunity_families"],
-                        ),
+                        family_recovery_value,
                     ),
                     (
                         "task-weighted rescue rate (sensitivity)",
-                        "%s across %d opportunity task(s)"
-                        % (
-                            format_percent(recovery["task_weighted_rescue_rate"]),
-                            recovery["opportunity_tasks"],
-                        ),
+                        task_recovery_value,
                     ),
                     ("regressions (Inferred pass → Dynamic fail)", recovery["regressions"]),
                     (
@@ -3295,7 +3490,15 @@ def make_report(
                         ),
                     ),
                     (
-                        "Dynamic runs requesting resource",
+                        "Natural Dynamic runs requesting resource",
+                        format_rate(
+                            recovery["natural_request_successes"],
+                            recovery["natural_request_n"],
+                            recovery["natural_request_rate"],
+                        ),
+                    ),
+                    (
+                        "All Dynamic runs requesting resource (suite diagnostic)",
                         format_rate(
                             recovery["dynamic_request_successes"],
                             recovery["dynamic_request_n"],
@@ -3343,7 +3546,7 @@ def make_report(
     lines.append(
         markdown_table(
             ("Question", "Current mapping", "Evidence rule"),
-            design_mapping(summaries, paired, runs=runs),
+            design_mapping(summaries, paired, runs=runs, recovery=recovery),
         )
     )
     lines.extend(

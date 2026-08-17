@@ -38,10 +38,12 @@ zsh -ilc 'node experiments/pi-e2e/run-live.mjs'
 
 已安装 tarball 的真实父 Pi smoke 使用 [parent-fixture/PROMPT.md](./parent-fixture/PROMPT.md) 和 exact-file grant。该次 fresh install 也为 `SUCCESS`：子 Scope 11.10 秒、2 turns、2 tool calls、5,359 tokens；审核摘要见 [installed-parent-latest.json](./results/installed-parent-latest.json)。临时 npm prefix、Pi config 与原始 Trace 已移入废纸篓，未提交。
 
-同一链路已经编码为重放脚本；它会 pack 当前 tree、安装到 `mkdtemp`、运行真实父 Pi、检查 Trace/密钥并在 `finally` 删除临时目录。它的 180 秒首次实跑发生外层 timeout；上限已调为 300 秒，但在下一次成功实跑前，只能称“已编码、待验证稳定重放”：
+同一链路已经编码为重放脚本；它会 pack 当前 tree、安装到 `mkdtemp`、运行真实父 Pi、检查 Trace/密钥并在 `finally` 删除临时目录。但两次真实自动执行分别在 180 秒和 300 秒外层上限处超时，均发生在 pack/fresh install 之后的父 Pi→Extension→子 Session 阶段；脚本安全清理临时目录且没有覆盖历史成功摘要。因此它目前只能称“已编码、尚未验证稳定重放”，不能把 Step 15 的手工成功写成自动脚本已经通过：
 
 ```bash
 zsh -ilc 'node experiments/pi-e2e/run-installed-parent-live.mjs'
 ```
+
+下一次复跑前应把父模型委托、子 Scope、provider retry 与进程启动分别计时并设独立预算；单纯继续放宽总 timeout 不会解释两次超时。历史 [installed-parent-latest.json](./results/installed-parent-latest.json) 仍证明当时的窄链路成功，但它没有绑定当前 tree，也不是自动脚本成功记录。
 
 这些 E2E 只支持 Pi 0.84.2、可信进程内代码、explicit API-key `openai-completions`、exact-file BOUNDED 的功能性 MVP。它们不声称是 OS sandbox，也不支持 OAuth/native/custom stream、目录/PROJECT 泛化、并发容量或对恶意主机写者的 TOCTOU 隔离。

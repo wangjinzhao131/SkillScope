@@ -5,7 +5,8 @@
 | 文档 | 用途 |
 | --- | --- |
 | [访问边界实验预注册.md](./访问边界实验预注册.md) | 从未冻结、已 supersede 的 v1 历史草案；保留以防事后改写历史 |
-| [访问边界实验预注册_v2.md](./访问边界实验预注册_v2.md) | 下一次 Schema 2 live Pilot 的 data-before freeze、排除、停止规则和解释边界 |
+| [访问边界实验预注册_v2.md](./访问边界实验预注册_v2.md) | 已完成 Schema 2 live Pilot 的 data-before freeze、排除、停止规则和解释边界 |
+| [Schema 2 Pilot v1 人工复核](../../experiments/access-frontier/reports/schema2-pilot-v1/README.md) | 70-job 五条件结果、forced-undergrant 机制结果、artifact hashes、失败审阅与严格推断边界 |
 | [R1反证与Schema2设计修正.md](./R1反证与Schema2设计修正.md) | dry pilot 对测量契约的反证、公开 response contract、源行 provenance 与 forced-undergrant 设计 |
 | [假设与决策记录.md](./假设与决策记录.md) | 假设状态、支持/反驳证据与架构决策 |
 | [实验日志.md](./实验日志.md) | 按时间记录每个步骤、失败、协议修订和真实 API 运行 |

@@ -113,4 +113,4 @@ npm run experiment:smoke
 
 hostile tests覆盖自由同义 code、额外/缺失/别名 facts、类型强转、enum 越界、单项 enum、单点 pattern/range、组合约束压缩候选集、候选位置编码、非法 expected/decoy、全 null abstention、错误源行偏移、缺失/倒置/越界源跨度。契约采用 fail-closed 规则：若静态检查不能证明 pattern/range 至少容纳两个值，就不接受它作为公开格式约束。
 
-机制 executor 的 scripted smoke 只证明实验链路与配对测量可执行，不是 LLM 机制效果；真实 `deepseek-v4-flash` 结果由主流程在干净 revision 上另行运行。
+机制 executor 的 scripted smoke 只证明实验链路与配对测量可执行，不是 LLM 机制效果。后续真实 `deepseek-v4-flash` forced-undergrant Pilot 已从 clean revision `ddfd342` 独立运行：两个 control 规范 abstain/失败，两个 treatment 均 request、获批、fresh rerun 并恢复；该 `n=2` 条件化机制结果与自然五条件矩阵分离，详见 [Schema 2 Pilot 人工复核](../../experiments/access-frontier/reports/schema2-pilot-v1/README.md)。
