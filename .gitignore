@@ -7,3 +7,9 @@ coverage/
 
 # Runtime traces and artifacts may contain sensitive task context.
 .pi/scoped-skills/
+
+# Raw experiment manifests/results embed hidden fixtures and model outputs.
+# Commit reviewed aggregate reports and hashes, never an uninspected live run.
+experiments/access-frontier/runs/
+experiments/access-frontier/mechanism-suites/runs/
+*.corrupt-tail-*

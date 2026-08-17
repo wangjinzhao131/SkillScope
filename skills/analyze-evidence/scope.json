@@ -1,0 +1,79 @@
+{
+  "name": "analyze-evidence",
+  "version": "0.1.0",
+  "description": "Analyze bounded evidence and return findings with explicit provenance.",
+  "promptFile": "SKILL.md",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "question": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "hypotheses": {
+        "type": "array",
+        "items": { "type": "string", "maxLength": 1000 },
+        "maxItems": 32
+      },
+      "answerStyle": {
+        "type": "string",
+        "enum": ["concise", "detailed"]
+      }
+    },
+    "required": ["question"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "answer": {
+        "type": "string",
+        "maxLength": 8000
+      },
+      "confidence": {
+        "type": "string",
+        "enum": ["high", "medium", "low", "insufficient"]
+      },
+      "findings": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "claim": { "type": "string", "minLength": 1, "maxLength": 2000 },
+            "kind": { "type": "string", "enum": ["observation", "inference"] },
+            "evidenceIds": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1, "maxLength": 128 },
+              "minItems": 1,
+              "maxItems": 32
+            }
+          },
+          "required": ["claim", "kind", "evidenceIds"],
+          "additionalProperties": false
+        },
+        "maxItems": 128
+      },
+      "gaps": {
+        "type": "array",
+        "items": { "type": "string", "maxLength": 2000 },
+        "maxItems": 32
+      }
+    },
+    "required": ["answer", "confidence", "findings", "gaps"],
+    "additionalProperties": false
+  },
+  "allowedTools": ["scope_read", "scope_list", "scope_search"],
+  "resourcePolicy": {
+    "defaultAccessMode": "BOUNDED",
+    "allowedAccessModes": ["SEALED", "BOUNDED", "PROJECT"],
+    "allowedOperations": ["read", "list", "search"]
+  },
+  "budget": {
+    "maxTurns": 8,
+    "maxToolCalls": 16,
+    "timeoutMs": 120000,
+    "maxPromptBytes": 262144,
+    "maxResultBytes": 65536
+  }
+}

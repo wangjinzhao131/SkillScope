@@ -1,0 +1,4 @@
+2026-08-18T00:01:00Z import job started
+ERROR code=E_SCHEMA_VERSION consumer=warehouse-loader
+ROOT_CAUSE producer emits schema v3 while consumer accepts schema v2
+REMEDIATION pin producer to schema v2 until consumer rollout completes

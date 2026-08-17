@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0",
+  "experiment": "installed-tarball-real-parent-pi-e2e",
+  "package": {
+    "name": "pi-scoped-skills",
+    "version": "0.1.0",
+    "tarballSha1": "754dedc9a93d68bb55398923f56fbadc757029f2",
+    "installedInFreshPrefix": true
+  },
+  "host": {
+    "piVersion": "0.84.2",
+    "provider": "opencode-go",
+    "model": "deepseek-v4-flash",
+    "noSession": true,
+    "noContextFiles": true,
+    "globalSkillsDisabled": true,
+    "globalExtensionsDisabled": true,
+    "builtinToolsDisabled": true,
+    "outerToolAllowlist": [
+      "scoped_skill_run"
+    ]
+  },
+  "scope": {
+    "scopeId": "777acea3-f966-4e42-9d41-3dd1b8ed0ab6",
+    "accessMode": "BOUNDED",
+    "grantKind": "exact-file",
+    "status": "SUCCESS",
+    "startedAt": "2026-08-17T16:44:48.153Z",
+    "endedAt": "2026-08-17T16:44:59.249Z",
+    "usage": {
+      "turns": 2,
+      "toolCalls": 2,
+      "inputTokens": 2479,
+      "outputTokens": 1088,
+      "cacheReadTokens": 1792,
+      "totalTokens": 5359,
+      "cost": 0.0003283588,
+      "wallTimeMs": 11096
+    }
+  },
+  "trace": {
+    "format": "metadata-only-v1",
+    "manifestHash": "sha256:351a839918eb5629eb1cbffdb757b5e341bbce946a6d788f7e19d7da63355ea2",
+    "actualReadSetCount": 1,
+    "modelVisibleSetCount": 1,
+    "physicalMaterializedSetCount": 1,
+    "denialCount": 1
+  },
+  "assertions": {
+    "realParentPiInvokedInstalledExtension": true,
+    "independentChildCompleted": true,
+    "grantedEvidenceRead": true,
+    "projectRootListingDenied": true,
+    "businessPlaintextAbsentFromTrace": true,
+    "apiKeyAbsentFromTrace": true
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "schemaVersion": "1.0",
+  "experiment": "pi-extension-live-e2e",
+  "startedAt": "2026-08-17T16:40:24.885Z",
+  "endedAt": "2026-08-17T16:40:36.575Z",
+  "durationMs": 11687.717292,
+  "provider": "opencode-go",
+  "model": "deepseek-v4-flash",
+  "transport": "openai-completions",
+  "invocation": {
+    "skill": "analyze-evidence",
+    "accessMode": "BOUNDED",
+    "promptRefCount": 1,
+    "grants": [
+      {
+        "path": "logs/import.log",
+        "kind": "file",
+        "operations": [
+          "read",
+          "search"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "status": "SUCCESS",
+    "summary": "Analyzed the granted log logs/import.log. The import failure was caused by a schema version mismatch: the producer (post-rollout) emits schema v3 while the warehouse-loader consumer only accepts schema v2 (error code E_SCHEMA_VERSION). The immediate remediation is to pin the producer to schema v2 until the consumer rollout completes.",
+    "data": {
+      "answer": "Cause: schema version mismatch — after the producer rollout, the producer emits schema v3 while the warehouse-loader consumer accepts only schema v2 (error code E_SCHEMA_VERSION). Immediate remediation: pin the producer to schema v2 until the consumer rollout completes.",
+      "confidence": "high",
+      "findings": [
+        {
+          "claim": "The import job started successfully (timestamped start) and then failed with error code E_SCHEMA_VERSION on consumer warehouse-loader.",
+          "kind": "observation",
+          "evidenceIds": [
+            "ev-log-l1",
+            "ev-log-l2"
+          ]
+        },
+        {
+          "claim": "Root cause recorded in the log: producer emits schema v3 while consumer accepts schema v2.",
+          "kind": "observation",
+          "evidenceIds": [
+            "ev-log-l3"
+          ]
+        },
+        {
+          "claim": "The log specifies the immediate remediation: pin the producer to schema v2 until the consumer rollout completes.",
+          "kind": "observation",
+          "evidenceIds": [
+            "ev-log-l4"
+          ]
+        },
+        {
+          "claim": "Because the log explicitly names the cause and remediation, no external investigation is required to answer the question.",
+          "kind": "inference",
+          "evidenceIds": [
+            "ev-log-l3",
+            "ev-log-l4"
+          ]
+        }
+      ],
+      "gaps": [
+        "No evidence outside logs/import.log was granted; details such as which component performed the rollout are not in scope."
+      ]
+    },
+    "evidenceRefs": [
+      {
+        "id": "ev-log-l1",
+        "resource": "logs/import.log",
+        "locator": "line 1",
+        "claim": "Import job started at 2026-08-18T00:01:00Z"
+      },
+      {
+        "id": "ev-log-l2",
+        "resource": "logs/import.log",
+        "locator": "line 2",
+        "claim": "ERROR code=E_SCHEMA_VERSION consumer=warehouse-loader"
+      },
+      {
+        "id": "ev-log-l3",
+        "resource": "logs/import.log",
+        "locator": "line 3",
+        "claim": "ROOT_CAUSE producer emits schema v3 while consumer accepts schema v2"
+      },
+      {
+        "id": "ev-log-l4",
+        "resource": "logs/import.log",
+        "locator": "line 4",
+        "claim": "REMEDIATION pin producer to schema v2 until consumer rollout completes"
+      }
+    ],
+    "requestedResources": [],
+    "warnings": [],
+    "usage": {
+      "turns": 3,
+      "toolCalls": 3,
+      "inputTokens": 5125,
+      "outputTokens": 994,
+      "cacheReadTokens": 1792,
+      "cacheWriteTokens": 0,
+      "totalTokens": 7911,
+      "cost": 0.0005004188,
+      "wallTimeMs": 11685
+    },
+    "scopeId": "1727248d-c337-498e-8f3c-8ba9a24d428c",
+    "traceId": "1727248d-c337-498e-8f3c-8ba9a24d428c"
+  },
+  "access": {
+    "declaredSet": [
+      {
+        "path": "logs/import.log",
+        "kind": "file",
+        "operations": [
+          "read",
+          "search"
+        ]
+      }
+    ],
+    "grantedSet": [
+      {
+        "path": "logs/import.log",
+        "kind": "file",
+        "operations": [
+          "read",
+          "search"
+        ]
+      }
+    ],
+    "attemptedSet": [
+      ".",
+      "logs/import.log"
+    ],
+    "actualReadSet": [
+      "logs/import.log"
+    ],
+    "modelVisibleSet": [
+      "logs/import.log"
+    ],
+    "denials": [
+      {
+        "code": "UNAUTHORIZED",
+        "operation": "list",
+        "rawPath": ".",
+        "path": ".",
+        "message": "Resource is outside the effective grant"
+      }
+    ]
+  },
+  "trace": {
+    "format": "metadata-only-v1",
+    "files": [
+      "events.jsonl",
+      "manifest.json",
+      "result.json"
+    ],
+    "manifestSha256": "sha256:9bc5adfe2f482d1f2e902bd250fbd162edb8a925e0d7109e664be0a847111d22",
+    "eventsSha256": "sha256:c0460bf8a35cdab82cd2265883078ac1a846b44968fbf1988594d2381358c2a8",
+    "resultSha256": "sha256:60ddc7c3388ffa63dc3f03cceface11c748436077288247ed1c883b000118093",
+    "eventTypes": [
+      "scope_started",
+      "skill_loaded",
+      "turn_start",
+      "tool_start",
+      "tool_start",
+      "tool_attempt",
+      "tool_attempt",
+      "tool_end",
+      "tool_end",
+      "turn_start",
+      "tool_start",
+      "tool_attempt",
+      "tool_end",
+      "turn_start",
+      "tool_start",
+      "completion_accepted",
+      "tool_end",
+      "scope_finished"
+    ],
+    "physicalMaterializedCount": 1
+  },
+  "progressEvents": [
+    "Preparing scoped skill analyze-evidence…",
+    "Starting scoped skill analyze-evidence@0.1.0",
+    "Running child session with 3 scoped resource tool(s)"
+  ],
+  "assertions": {
+    "registeredPiTool": true,
+    "independentChildCompleted": true,
+    "runtimeOwnedMetadata": true,
+    "grantedEvidenceRead": true,
+    "outOfGrantPrivateUnread": true,
+    "externalTracePersisted": true,
+    "externalTraceMetadataOnly": true,
+    "businessPlaintextAbsentFromTrace": true,
+    "apiKeyPersisted": false
+  }
+}

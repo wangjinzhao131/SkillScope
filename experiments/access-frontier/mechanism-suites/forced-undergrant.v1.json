@@ -1,0 +1,57 @@
+{
+  "$schema": "./forced-undergrant.schema.json",
+  "schemaVersion": "1.0",
+  "suiteId": "forced-undergrant-r1",
+  "description": "A separate mechanism probe for whether one fresh-rerun resource expansion can recover from a deterministic missing-evidence grant.",
+  "estimand": "Paired semantic-pass recovery caused by enabling one catalog-bounded resource request, conditional on the same deliberately insufficient initial grant.",
+  "arms": [
+    {
+      "id": "FORCED_UNDERGRANT_NO_EXPANSION",
+      "allowResourceRequest": false,
+      "freshRerunAfterApproval": false
+    },
+    {
+      "id": "FORCED_UNDERGRANT_NEED_RESOURCE",
+      "allowResourceRequest": true,
+      "freshRerunAfterApproval": true
+    }
+  ],
+  "probes": [
+    {
+      "taskId": "af-dispersion-cross",
+      "initialGrants": [
+        {
+          "path": "logs/jobs/job-204.log",
+          "kind": "file",
+          "operations": ["read", "search"]
+        }
+      ],
+      "withheldRequiredEvidence": ["config/workers/retry.conf"],
+      "requestEnvelope": [
+        {
+          "path": "config/",
+          "kind": "directory",
+          "operations": ["read", "list", "search"]
+        }
+      ]
+    },
+    {
+      "taskId": "af-entropy-low",
+      "initialGrants": [
+        {
+          "path": "logs/signing/r-771.log",
+          "kind": "file",
+          "operations": ["read", "search"]
+        }
+      ],
+      "withheldRequiredEvidence": ["config/signing/keys.conf"],
+      "requestEnvelope": [
+        {
+          "path": "config/signing/",
+          "kind": "directory",
+          "operations": ["read", "list", "search"]
+        }
+      ]
+    }
+  ]
+}

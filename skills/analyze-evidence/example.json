@@ -1,0 +1,29 @@
+{
+  "skill": "analyze-evidence",
+  "input": {
+    "question": "What most likely caused the import failure?",
+    "answerStyle": "concise"
+  },
+  "promptRefs": [
+    {
+      "kind": "file",
+      "name": "failure excerpt",
+      "path": "logs/import.log",
+      "startLine": 120,
+      "endLine": 180
+    }
+  ],
+  "resourceGrants": [
+    {
+      "path": "logs/import.log",
+      "kind": "file",
+      "operations": ["read", "search"]
+    },
+    {
+      "path": "src/import",
+      "kind": "directory",
+      "operations": ["read", "list", "search"]
+    }
+  ],
+  "accessMode": "BOUNDED"
+}

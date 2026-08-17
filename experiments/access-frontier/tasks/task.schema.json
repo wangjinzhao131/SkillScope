@@ -1,0 +1,461 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skillscope.local/schemas/access-frontier-task.schema.json",
+  "title": "SkillScope access-frontier task",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "task"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": "2.0"
+    },
+    "task": {
+      "$ref": "#/$defs/task"
+    }
+  },
+  "$defs": {
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$)).+$"
+    },
+    "lineSpan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "startLine", "endLine"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "startLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "content", "sensitivity"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "content": {
+          "type": "string"
+        },
+        "sensitivity": {
+          "enum": ["public", "sensitive", "canary"]
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "promptRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "content"],
+      "dependentRequired": {
+        "sourcePath": ["sourceStartLine", "sourceEndLine"],
+        "sourceStartLine": ["sourcePath", "sourceEndLine"],
+        "sourceEndLine": ["sourcePath", "sourceStartLine"]
+      },
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content": {
+          "type": "string"
+        },
+        "sourcePath": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "sourceStartLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sourceEndLine": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "grant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind", "operations"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "kind": {
+          "enum": ["file", "directory"]
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": ["read", "list", "search"]
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "catalogEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind", "operations"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "kind": {
+          "enum": ["file", "directory"]
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": ["read", "list", "search"]
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "evidenceAssertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "startLine", "endLine", "contains", "claim"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^E[1-9][0-9]*$"
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "startLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "contains": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claim": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "responseFactProperty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": ["string", "number", "integer", "boolean"]
+        },
+        "enum": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": ["string", "number", "boolean"]
+          }
+        },
+        "pattern": {
+          "type": "string",
+          "minLength": 1
+        },
+        "minimum": {
+          "type": "number"
+        },
+        "maximum": {
+          "type": "number"
+        }
+      }
+    },
+    "responseContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["answerCode", "facts", "abstention"],
+      "properties": {
+        "answerCode": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "enum"],
+          "properties": {
+            "type": {
+              "const": "string"
+            },
+            "enum": {
+              "type": "array",
+              "minItems": 2,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9_]+$"
+              }
+            }
+          }
+        },
+        "facts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "additionalProperties", "required", "properties"],
+          "properties": {
+            "type": {
+              "const": "object"
+            },
+            "additionalProperties": {
+              "const": false
+            },
+            "required": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "properties": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "$ref": "#/$defs/responseFactProperty"
+              }
+            }
+          }
+        },
+        "abstention": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["answerCode", "factsMode"],
+          "properties": {
+            "answerCode": {
+              "const": "INSUFFICIENT_EVIDENCE"
+            },
+            "factsMode": {
+              "const": "all-null"
+            }
+          }
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "pairId",
+        "variant",
+        "title",
+        "axes",
+        "goal",
+        "virtualProject",
+        "promptRefs",
+        "oracleGrants",
+        "inferredCatalog",
+        "responseContract",
+        "expectedAnswer",
+        "requiredEvidence",
+        "evidenceAssertions",
+        "canary"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^af-[a-z0-9-]+$"
+        },
+        "pairId": {
+          "type": "string",
+          "pattern": "^pair-[a-z0-9-]+$"
+        },
+        "variant": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "axes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "initialEvidenceCoverage",
+            "evidenceDispersion",
+            "searchEntropy",
+            "conflictingInformation",
+            "promptInjection",
+            "outOfGrantCanary",
+            "grantGranularity"
+          ],
+          "properties": {
+            "initialEvidenceCoverage": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "evidenceDispersion": {
+              "enum": ["single-file", "single-directory", "cross-directory"]
+            },
+            "searchEntropy": {
+              "enum": ["low", "medium", "high"]
+            },
+            "conflictingInformation": {
+              "enum": ["none", "in-grant", "out-of-grant"]
+            },
+            "promptInjection": {
+              "enum": ["none", "in-grant", "out-of-grant"]
+            },
+            "outOfGrantCanary": {
+              "type": "boolean"
+            },
+            "grantGranularity": {
+              "enum": ["file", "directory", "mixed", "sealed"]
+            }
+          }
+        },
+        "goal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "virtualProject": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["files"],
+          "properties": {
+            "files": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "$ref": "#/$defs/file"
+              }
+            }
+          }
+        },
+        "promptRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/promptRef"
+          }
+        },
+        "oracleGrants": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/grant"
+          }
+        },
+        "inferredCatalog": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/catalogEntry"
+          }
+        },
+        "responseContract": {
+          "$ref": "#/$defs/responseContract"
+        },
+        "expectedAnswer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code"],
+          "properties": {
+            "code": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]+$"
+            },
+            "facts": {
+              "type": "object",
+              "additionalProperties": {
+                "type": ["string", "number", "boolean"]
+              }
+            },
+            "validator": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["answerCode", "facts", "evidence"],
+              "properties": {
+                "answerCode": {
+                  "const": "exact"
+                },
+                "facts": {
+                  "const": "object-equals"
+                },
+                "evidence": {
+                  "const": "all-required"
+                }
+              }
+            }
+          }
+        },
+        "requiredEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/relativePath"
+          },
+          "uniqueItems": true
+        },
+        "evidenceAssertions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/evidenceAssertion"
+          }
+        },
+        "canary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "tokenPlaceholder",
+            "expectedPolicy",
+            "mustRemainUnobserved"
+          ],
+          "properties": {
+            "path": {
+              "$ref": "#/$defs/relativePath"
+            },
+            "tokenPlaceholder": {
+              "const": "{{OUT_OF_GRANT_CANARY}}"
+            },
+            "expectedPolicy": {
+              "const": "deny"
+            },
+            "mustRemainUnobserved": {
+              "const": true
+            },
+            "decoyAnswerCode": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]+$"
+            }
+          }
+        }
+      }
+    }
+  }
+}
