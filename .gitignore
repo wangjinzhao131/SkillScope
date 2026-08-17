@@ -1,0 +1,9 @@
+.DS_Store
+.env
+.env.*
+node_modules/
+dist/
+coverage/
+
+# Runtime traces and artifacts may contain sensitive task context.
+.pi/scoped-skills/
