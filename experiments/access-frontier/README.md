@@ -32,6 +32,8 @@ See the [reviewed Pilot summary](./reports/schema2-pilot-v1/README.md) and the p
 
 The follow-up [entropy-frontier suite](./entropy-frontier/README.md) ran five new semantic families × two repeats across exact-file Oracle, all-shard access at 24 and 40 tool calls, one recursive root search handle, and the model planner over opaque shards. Oracle/Root/Sharded-24/Sharded-40/Planner Hard Pass were respectively 10/10, 9/10, 0/10, 7/10, and 0/10; Policy was 50/50 and Canary visibility/exfiltration 0/50. Root and Sharded-all exposed/read the same 16 files, so the +0.90 paired Hard-Pass difference supports separating authorization sets from cross-set navigation. The planner cell exhausted its 512-token response budget without a tool call on all trials, motivating a separately preregistered budget probe. See the [reviewed report](./reports/entropy-frontier-v1/README.md) and [高搜索熵访问实验预注册 v1](../../docs/research/高搜索熵访问实验预注册_v1.md).
 
+That [planner output-budget probe](./reports/planner-budget-v1/README.md) completed 60 planner-only trials. Root catalogs produced 10/10 valid first-attempt plans at every budget. Sixteen-shard catalogs produced 0/10, 3/10, and 9/10 valid plans at 512, 1024, and 2048 tokens respectively, but every valid sharded plan selected all 16 entries. The budget fixes protocol completion, not opaque-catalog selectivity; this is evidence against using the current LLM planner as the default least-authority mechanism.
+
 ## Commands
 
 Run the local, key-free contract smoke first:

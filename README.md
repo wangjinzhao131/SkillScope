@@ -85,11 +85,11 @@ node_modules/.bin/pi \
 - 第一轮 70-job access-frontier dry pilot 提前证伪了隐藏 exact code/facts 评分设计；该批被明确降级为 measurement failure，没有被包装成 SkillScope 能力结论。新版公开 response contract 与 provenance 行映射由此产生。
 - 从 clean commit `ddfd342` 运行的 Schema 2 探索性 Pilot 已完成 70 个 `deepseek-v4-flash` jobs：Project/Oracle Hard Pass 均为 14/14，Inferred/Need 均为 13/14，SEALED 为 1/14 且另有 13 次规范 abstention；70/70 Policy Pass，受限 Canary 可见 0/56，exfiltration 0/70。两个失败都是 high-entropy 任务在 planner fallback-all 后，第 25 次调用尝试触发冻结的 24-call 预算终止。
 - 自然 Need 条件 0/14 发出资源请求，所以动态恢复效果是 `NOT_IDENTIFIABLE`，不是 0%。独立 forced-undergrant 的两个构造机会中，两个 control 均失败/abstain，两个 treatment 均 request、获批、fresh rerun 并恢复；这只证明条件化机制链可行，不能冒充自然 workload 收益。
-- 后续 high-search-entropy Pilot 完成 50 个 jobs：exact-file Oracle 10/10、单一受控父目录 search handle 9/10、16个分片目录在24-call下0/10、提高到40-call后7/10、当前模型planner为0/10。Root与分片授权/读取文件面相同，差异来自跨集合导航；这支持把“底层授权集合”与“聚合搜索句柄”拆开，而不是直接扩大为PROJECT。planner的10/10 fallback首先由每轮512输出token耗尽解释，已另建预数据planner预算probe。
+- 后续 high-search-entropy Pilot 完成 50 个 jobs：exact-file Oracle 10/10、单一受控父目录 search handle 9/10、16个分片目录在24-call下0/10、提高到40-call后7/10、当前模型planner为0/10。Root与分片授权/读取文件面相同，差异来自跨集合导航；这支持把“底层授权集合”与“聚合搜索句柄”拆开，而不是直接扩大为PROJECT。随后的60-trial planner probe显示：root catalog在512 tokens已10/10合法，16-shard则从512的0/10升到2048的9/10，但所有合法sharded plan都全选16/16；预算修复协议完成，不产生选择性。
 
 这些结果只有 7 个合成 counterfactual families、1 个 repeat，缺少 repository holdout、普通 Subagent、Prompt-only/Resource-only 和 confirmatory margin/power。它们不能给访问 Profile 作正式排名，也不能据此作产品架构结论。
 
-详细证据见 [Schema 2 Pilot 人工复核](./experiments/access-frontier/reports/schema2-pilot-v1/README.md)、[高搜索熵 Pilot 人工复核](./experiments/access-frontier/reports/entropy-frontier-v1/README.md)、[实验日志](./docs/research/实验日志.md)、[插件实现独立审计](./docs/research/插件实现独立审计.md) 和 [R1 dry-pilot 报告](./experiments/access-frontier/reports/dry-r1/README.md)。
+详细证据见 [Schema 2 Pilot 人工复核](./experiments/access-frontier/reports/schema2-pilot-v1/README.md)、[高搜索熵 Pilot 人工复核](./experiments/access-frontier/reports/entropy-frontier-v1/README.md)、[Planner预算probe人工复核](./experiments/access-frontier/reports/planner-budget-v1/README.md)、[实验日志](./docs/research/实验日志.md)、[插件实现独立审计](./docs/research/插件实现独立审计.md) 和 [R1 dry-pilot 报告](./experiments/access-frontier/reports/dry-r1/README.md)。
 
 ## 安全与解释边界
 

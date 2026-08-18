@@ -39,3 +39,5 @@ The post-Pilot [planner output-budget probe](../../../docs/research/Plannerè¾“å‡
 node experiments/access-frontier/entropy-frontier/planner-budget-probe.mjs plan
 EXPERIMENT_KEY=... node experiments/access-frontier/entropy-frontier/planner-budget-probe.mjs run
 ```
+
+The completed result is reviewed in [planner-budget-v1/README.md](../reports/planner-budget-v1/README.md): root catalogs were valid 30/30, while sharded catalogs improved from 0/10 at 512 to 9/10 at 2048; all valid sharded plans selected all 16 entries, so protocol recovery did not create selectivity.
