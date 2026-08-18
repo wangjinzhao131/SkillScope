@@ -1,0 +1,41 @@
+{
+  "name": "inspect-observation",
+  "version": "1.0.0",
+  "description": "Extract one authoritative observation fact from one exact file.",
+  "promptFile": "SKILL.md",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "question": { "type": "string", "minLength": 1, "maxLength": 2000 },
+      "path": { "type": "string", "minLength": 1, "maxLength": 512 }
+    },
+    "required": ["question", "path"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "value": { "type": "string", "minLength": 1, "maxLength": 256 }
+    },
+    "required": ["value"],
+    "additionalProperties": false
+  },
+  "allowedTools": ["scope_read"],
+  "resourcePolicy": {
+    "defaultAccessMode": "BOUNDED",
+    "allowedAccessModes": ["BOUNDED"],
+    "allowedOperations": ["read"]
+  },
+  "delegationPolicy": {
+    "allowedSkills": [],
+    "maxChildScopes": 0,
+    "maxConcurrency": 1
+  },
+  "budget": {
+    "maxTurns": 6,
+    "maxToolCalls": 6,
+    "timeoutMs": 120000,
+    "maxPromptBytes": 131072,
+    "maxResultBytes": 8192
+  }
+}

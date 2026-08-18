@@ -1,6 +1,6 @@
 # SkillScope Pi Extension（Pi 0.84.2）
 
-本目录是 SkillScope 的 Pi 适配层。它注册一个父级工具 `scoped_skill_run`，为每次调用创建全新的内存态 `AgentSession`，只注入显式 input/prompt refs，只暴露 ResourceBroker 支持的只读工具和 `scope_complete`，最后由 Runtime 生成 `SkillResult`。
+本目录是 SkillScope 的 Pi 适配层。它注册父级工具 `scoped_skill_run`，为每次调用创建全新的内存态 `AgentSession`；若 Skill manifest 明确允许，main Scope 还可用 `scope_invoke_skill` 为每次子 Skill 调用创建另一个全新 Session。每层只注入显式 input/prompt refs，只暴露 allowlist 工具，最后由 Runtime 生成 `SkillResult`；child transcript 不返回调用方。
 
 ## 已核对的 Pi 公开 API
 
@@ -13,6 +13,12 @@
 - ExtensionContext 不公开父 `ModelRuntime`。适配器通过父 `ModelRegistry.getApiKeyAndHeaders(ctx.model)` 冻结本次已解析的 API-key/baseUrl/headers/env snapshot，按所选 model 重建一个静态 OpenAI-compatible provider，并执行 `runtime.refresh({ providers: [providerId], allowNetwork: false })`。Pi 0.84.2 若省略这次 refresh，`hasConfiguredAuth()` 的 snapshot 会过期。
 
 插件从 `ctx.model` 复用父模型，不硬编码 `deepseek-v4-flash`、Zen endpoint 或任何其他模型。实验/E2E 可以在父 Pi Session 选择 `deepseek-v4-flash`。
+
+## 嵌套 Scope 与生命周期
+
+`scope.json.delegationPolicy` 冻结 main Skill 可调用的 `allowedSkills`、`maxChildScopes` 和 `maxConcurrency`。每次合法调用都有新的 `scopeId`、`invocationId`、预算、Trace 和 Session；Runtime 默认只允许 root depth 0 → child depth 1，child 不再获得 grandchild 工具。子调用的 access mode、file PromptRefs 和 grants 必须是调用方 envelope 的子集。
+
+`SkillResult` 当前协议为 `schemaVersion: "1.1"`，除单 Scope usage 外还带 Runtime-owned `parentScopeId`、`rootScopeId`、`depth`、`treeUsage` 和直接 `childScopes` 摘要。main Skill 只能看到 child 的 compact structured result，并以 `scope://<childScopeId>` 引用它；不会看到 child messages 或 tool history。Runtime 在所有退出路径维护 active/start/dispose 账本，父级取消与 timeout 会沿调用链传播。
 
 ## 协议边界
 
@@ -104,7 +110,7 @@ TraceStore 在创建目录前 canonicalize 最近存在祖先，创建后再次 
 每个 Scoped Skill 需要：
 
 - `SKILL.md`：可同时作为 Pi native Skill 文档和 child instructions；
-- `scope.json`：name/version、input/output JSON Schema、允许工具、资源策略和预算。
+- `scope.json`：name/version、input/output JSON Schema、允许工具、资源策略、可选 child Skill delegation policy 和预算。
 
 MVP 的 Runtime validator 支持 `type`、`const`、`enum`、`anyOf`、对象 properties/required/additionalProperties、数组 items/minItems/maxItems，以及字符串 minLength/maxLength。Manifest 若使用 `$ref`、`oneOf`、`pattern`、数值范围等尚未实现的约束会在加载时 fail closed，而不是静默忽略。
 
@@ -117,7 +123,7 @@ npm run test:pi
 npm run typecheck
 ```
 
-Pi adapter 测试覆盖 Runtime 元数据所有权、状态相关 output、completion batch/重复提交、pre-completion evidence ledger、全链路 timeout、资源物化审计、真实路径 symlink escape、metadata-only Trace，以及 0.84.2 provider bridge refresh/fail-closed 矩阵。
+Pi adapter 测试覆盖 Runtime 元数据所有权、状态相关 output、completion batch/重复提交、pre-completion evidence ledger、全链路 timeout、资源物化审计、真实路径 symlink escape、metadata-only Trace、独立 child Scope ID/父子关系/调用树 usage/dispose、向下授权和并发 fail-closed，以及 0.84.2 provider bridge refresh/fail-closed 矩阵。
 
 当前依赖树配合 TypeScript 7/NodeNext 严格检查时，Pi 0.84.2 自身的若干 `.d.ts`（JSON import attributes、`path.PlatformPath`、transitive optional types）会在 `skipLibCheck: false` 下报第三方错误；仓库因此显式启用 `skipLibCheck: true`，项目源码仍在 strict 模式检查。该项属于依赖声明兼容性，不改变运行时协议。
 

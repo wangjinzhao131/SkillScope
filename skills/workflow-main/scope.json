@@ -1,0 +1,45 @@
+{
+  "name": "workflow-main",
+  "version": "1.0.0",
+  "description": "Compose two disposable child Skill Scopes into one typed workflow result.",
+  "promptFile": "SKILL.md",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "question": { "type": "string", "minLength": 1, "maxLength": 2000 },
+      "decisionRule": { "type": "string", "minLength": 1, "maxLength": 2000 },
+      "constraintPath": { "type": "string", "minLength": 1, "maxLength": 512 },
+      "observationPath": { "type": "string", "minLength": 1, "maxLength": 512 }
+    },
+    "required": ["question", "decisionRule", "constraintPath", "observationPath"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "decision": { "type": "string", "enum": ["ALLOW", "BLOCK"] },
+      "constraintFact": { "type": "string", "minLength": 1, "maxLength": 256 },
+      "observationFact": { "type": "string", "minLength": 1, "maxLength": 256 }
+    },
+    "required": ["decision", "constraintFact", "observationFact"],
+    "additionalProperties": false
+  },
+  "allowedTools": [],
+  "resourcePolicy": {
+    "defaultAccessMode": "BOUNDED",
+    "allowedAccessModes": ["BOUNDED"],
+    "allowedOperations": ["read"]
+  },
+  "delegationPolicy": {
+    "allowedSkills": ["inspect-constraint", "inspect-observation"],
+    "maxChildScopes": 2,
+    "maxConcurrency": 2
+  },
+  "budget": {
+    "maxTurns": 8,
+    "maxToolCalls": 4,
+    "timeoutMs": 240000,
+    "maxPromptBytes": 131072,
+    "maxResultBytes": 8192
+  }
+}

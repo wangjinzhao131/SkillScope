@@ -14,4 +14,5 @@ experiments/access-frontier/runs/
 experiments/access-frontier/mechanism-suites/runs/
 experiments/access-frontier/entropy-frontier/runs/
 experiments/access-frontier/resource-set-holdout/runs/
+experiments/parent-context/runs/
 *.corrupt-tail-*

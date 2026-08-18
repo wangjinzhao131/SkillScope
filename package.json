@@ -21,9 +21,10 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run test:core && npm run test:pi && npm run test:fixtures && npm run test:experiment && npm run test:mechanism && npm run test:entropy && npm run test:resource-set && npm run test:analysis && npm run test:plugin-audit && npm run test:security",
+    "test": "npm run test:core && npm run test:pi && npm run test:parent-context && npm run test:fixtures && npm run test:experiment && npm run test:mechanism && npm run test:entropy && npm run test:resource-set && npm run test:analysis && npm run test:plugin-audit && npm run test:security",
     "test:core": "node --test tests/core/**/*.test.js",
     "test:pi": "node --test tests/pi/**/*.test.js",
+    "test:parent-context": "node --test experiments/parent-context/src/*.test.mjs && node experiments/parent-context/src/cli.mjs --smoke",
     "test:fixtures": "node --test experiments/access-frontier/tasks/*.test.mjs && node experiments/access-frontier/tasks/lint.mjs",
     "test:experiment": "node --test experiments/access-frontier/src/runner.test.mjs tests/experiment-audit/*.test.mjs",
     "test:mechanism": "node --test experiments/access-frontier/mechanism-suites/*.test.mjs && node experiments/access-frontier/mechanism-suites/lint.mjs && node experiments/access-frontier/mechanism-suites/executor.mjs --smoke",
@@ -35,7 +36,11 @@
     "verify": "npm run typecheck && npm test && npm pack --dry-run",
     "experiment:smoke": "node experiments/access-frontier/src/cli.mjs --smoke",
     "experiment:run": "node experiments/access-frontier/src/cli.mjs",
-    "experiment:analyze": "python3 experiments/access-frontier/analysis/analyze.py"
+    "experiment:analyze": "python3 experiments/access-frontier/analysis/analyze.py",
+    "parent-context:smoke": "node experiments/parent-context/src/cli.mjs --smoke",
+    "parent-context:plan": "node experiments/parent-context/src/cli.mjs --plan experiments/parent-context/runs/manifest.json",
+    "parent-context:run": "node experiments/parent-context/src/cli.mjs --run --manifest experiments/parent-context/runs/manifest.json --results experiments/parent-context/runs/results.jsonl --concurrency 1",
+    "parent-context:analyze": "node experiments/parent-context/src/cli.mjs --analyze --manifest experiments/parent-context/runs/manifest.json --results experiments/parent-context/runs/results.jsonl --output experiments/parent-context/reports/latest"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "0.84.2",

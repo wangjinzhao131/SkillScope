@@ -1,12 +1,13 @@
 # SkillScope
 
-SkillScope 是一个面向 [Pi coding agent](https://github.com/badlogic/pi-mono) 的研究型 scoped-skill runtime：父 Agent 用显式输入、PromptRefs、资源 grant、预算和结构化结果契约启动全新的子 Session；子模型只能通过受控资源网关读取内容，完整运行轨迹留在父上下文之外。
+SkillScope 是一个面向 [Pi coding agent](https://github.com/badlogic/pi-mono) 的研究型 runtime：把委托做成更加轻量、随用随销的 Subagent Scope；主 Skill 还能为每次子 Skill 调用再创建一个不继承历史的新 Scope；跨 Scope 只返回 Runtime 校验过的结构化结果。当前最重要的研究问题是：这种设计能否减少父会话上下文占用，同时保持或提高端到端任务稳定性。
 
 当前版本是 **v0.1 research prototype**，不是进程沙箱，也不是生产级权限系统。已经实证通过的窄路径是：Pi `0.84.2`、单并发、可信 Extension、显式 API-key `openai-completions` provider、受控文本 fixture、exact-file `BOUNDED`。目录、`PROJECT`、通用 provider、恶意 Skill 隔离和生产容量治理都还没有放行。
 
 ## 现在有什么
 
 - `scoped_skill_run` Pi Extension：创建独立 in-memory AgentSession，不继承父 messages、AGENTS、全局 Skills 或 Prompt templates。
+- main Skill 可通过 `scope_invoke_skill` 启动 allowlist 中的独立 child Skill Scope；Runtime限制深度、数量、并发和向下授权，并记录父子ID、调用树usage与dispose账本。
 - `SEALED / BOUNDED / PROJECT` 三种读取 Profile；PromptRefs 与后续探索授权分开。
 - Runtime-owned `SkillResult`、严格状态矩阵、预算、timeout、evidence 引用和 `NEED_CONTEXT` 资源请求。
 - fail-closed ResourceBroker：`read / list / search`，覆盖 traversal、symlink、前缀碰撞、Unicode/编码和 grant 外访问。
@@ -17,7 +18,11 @@ SkillScope 是一个面向 [Pi coding agent](https://github.com/badlogic/pi-mono
 flowchart LR
     P["Parent Pi Session"] -->|"scoped_skill_run"| R["SkillScope Runtime"]
     R --> S["Skill registry + schemas"]
-    R --> C["Fresh child AgentSession"]
+    R --> C["Fresh main AgentSession"]
+    C --> N1["Fresh child Skill Scope A"]
+    C --> N2["Fresh child Skill Scope B"]
+    N1 -->|"typed SkillResult"| C
+    N2 -->|"typed SkillResult"| C
     C --> G["Scoped resource tools"]
     G --> B["ResourceBroker"]
     B --> F["Granted project resources"]
@@ -79,6 +84,8 @@ node_modules/.bin/pi \
 
 ## 已获得的证据
 
+直接针对“父上下文＋结构化返回＋嵌套 Skill”的四条件 Harness 和本地实现已完成，但**尚无该新版 60-trial live 结果**，因此现在还不能声称 SkillScope 已经降低父上下文或提高稳定性。设计、指标与运行门见[父上下文与嵌套 SkillScope 实验](./experiments/parent-context/README.md)。以下访问实验只提供底层边界与 Harness 经验，不能替代这个根本目标的证据。
+
 - 真实 `deepseek-v4-flash`：源码宿主完整 E2E 和一次“npm tarball → 全新安装 → 真实父 Pi → 已安装 Extension → 真实子 Session”历史手工链均为 `SUCCESS`。后者的自动重放脚本在 180 秒和 300 秒外层上限下都超时，尚不能称为稳定的一键复现入口。
 - 新 Trace E2E 断言：授权 exact-file 是唯一物理物化/实际读取/模型可见资源；项目根枚举被拒绝；业务路径、诊断正文和 API key 未以明文进入外置 `metadata-only-v1` Trace。仓库中的审核版合成 E2E 摘要另行保留了非敏感 fixture 诊断，不能与 Trace 隐私边界混为一谈。
 - 独立安全门禁覆盖 7,168 条 hostile paths、1,024 个前缀碰撞及确定性 broker/Pi/Trace 攻击用例。
@@ -99,7 +106,7 @@ node_modules/.bin/pi \
 - realpath 检查不能消除所有 TOCTOU、hardlink、mount alias 风险；v0.1 不支持写操作。
 - metadata-only Trace 使用无盐 SHA-256；低熵路径/状态可能被字典枚举，而且当前没有内置加密、retention 或 rotation。Trace 目录仍应按敏感数据保护。
 - 证据门禁验证资源可见性和 ID 引用完整性，不等同于通用 claim-level 事实验证。
-- 当前没有 active-child 并发上限；生产部署前必须补容量和取消治理。
+- 每个 main Scope 已有 child 数量与并发上限，但还没有跨父会话的进程级全局容量池；生产部署前仍需补全局容量与取消治理。
 - `peerDependencies` 已固定为 Pi `0.84.2` 与 TypeBox `1.3.7`；本项目没有对其他宿主版本给出兼容证据。
 
 ## 研究入口
@@ -109,6 +116,7 @@ node_modules/.bin/pi \
 - [Zen / DeepSeek API 探测](./docs/research/Zen_API_探测.md)
 - [安全不变量验证](./docs/research/安全不变量验证.md)
 - [access-frontier Harness](./experiments/access-frontier/README.md)
+- [父上下文与嵌套 SkillScope 实验](./experiments/parent-context/README.md)
 - [Pi E2E 复现](./experiments/pi-e2e/README.md)
 
 原始 live manifests/results 默认被 Git 忽略，因为它们含隐藏真值和未审阅模型输出；仓库只提交审核后的聚合报告、hash 和脱敏 E2E 摘要。

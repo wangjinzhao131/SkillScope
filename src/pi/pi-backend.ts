@@ -1,6 +1,7 @@
 import {
   createAgentSession,
   createExtensionRuntime,
+  defineTool,
   ModelRuntime,
   SessionManager,
   SettingsManager,
@@ -8,12 +9,15 @@ import {
   type ResourceLoader,
   type ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
 import type {
   ResourceOperation,
   ScopeBackend,
   ScopeBackendRequest,
   ScopeBackendResult,
   ScopeUsage,
+  SkillInvocation,
+  SkillResult,
 } from "./contracts.js";
 import { createCompletionTool, type CompletionAttemptDecision } from "./completion-tool.js";
 import { assembleChildPrompt } from "./prompt.js";
@@ -82,6 +86,7 @@ export class PiInProcessBackend implements ScopeBackend {
 
       const completionBatchDecisions = new Map<string, CompletionAttemptDecision>();
       let completionResourceAudit: ScopeBackendResult["completionResourceAudit"];
+      const childResults: SkillResult[] = [];
       const completion = createCompletionTool(request.skill.outputSchema, request.budget, request.onTrace, {
         beforeAccept(toolCallId) {
           const decision = completionBatchDecisions.get(toolCallId) ?? { accept: true };
@@ -116,6 +121,11 @@ export class PiInProcessBackend implements ScopeBackend {
             throw new ScopeBudgetError(`Resource tool-call budget exceeded (${request.budget.maxToolCalls})`);
           }
         }));
+      const childSkillTool = request.invokeChild
+        ? createChildSkillTool(request, childResults)
+        : undefined;
+      const customTools = [...guardedTools, ...(childSkillTool ? [childSkillTool] : []), completion.tool];
+      const activeToolNames = customTools.map((tool) => tool.name);
 
       const sessionPromise = (this.options.createSession ?? createAgentSession)({
         cwd: request.cwd,
@@ -123,8 +133,8 @@ export class PiInProcessBackend implements ScopeBackend {
         thinkingLevel: host.thinkingLevel,
         modelRuntime,
         noTools: "all",
-        tools: [...guardedTools.map((tool) => tool.name), "scope_complete"],
-        customTools: [...guardedTools, completion.tool],
+        tools: activeToolNames,
+        customTools,
         resourceLoader,
         settingsManager,
         sessionManager: SessionManager.inMemory(request.cwd),
@@ -189,17 +199,17 @@ export class PiInProcessBackend implements ScopeBackend {
       const usage = usageFromStats(stats, turns, resourceToolCalls);
       const resourceAudit = gateway.snapshot();
 
-      if (parentSignal?.aborted) return { usage, resourceAudit, terminationReason: "cancelled", error: abortError(parentSignal) };
-      if (timeoutReached) return { usage, resourceAudit, terminationReason: "timeout", error: new ScopeTimeoutError("Scoped skill timed out") };
-      if (budgetReached) return { usage, resourceAudit, terminationReason: "budget", error: caught ?? new ScopeBudgetError("Scoped skill budget exceeded") };
+      if (parentSignal?.aborted) return { usage, resourceAudit, childResults, terminationReason: "cancelled", error: abortError(parentSignal) };
+      if (timeoutReached) return { usage, resourceAudit, childResults, terminationReason: "timeout", error: new ScopeTimeoutError("Scoped skill timed out") };
+      if (budgetReached) return { usage, resourceAudit, childResults, terminationReason: "budget", error: caught ?? new ScopeBudgetError("Scoped skill budget exceeded") };
       const protocolIssue = completion.getProtocolIssue();
-      if (protocolIssue) return { usage, resourceAudit, protocolIssue, terminationReason: "completed" };
+      if (protocolIssue) return { usage, resourceAudit, childResults, protocolIssue, terminationReason: "completed" };
       const acceptedCompletion = completion.getCompletion();
       if (acceptedCompletion) {
-        return { completion: acceptedCompletion, usage, resourceAudit, completionResourceAudit, terminationReason: "completed" };
+        return { completion: acceptedCompletion, usage, resourceAudit, completionResourceAudit, childResults, terminationReason: "completed" };
       }
-      if (caught) return { usage, resourceAudit, terminationReason: "failed", error: caught };
-      return { usage, resourceAudit, terminationReason: "completed" };
+      if (caught) return { usage, resourceAudit, childResults, terminationReason: "failed", error: caught };
+      return { usage, resourceAudit, childResults, terminationReason: "completed" };
     } catch (error) {
       if (parentSignal?.aborted) return failure("cancelled", abortError(parentSignal));
       if (timeoutReached) return failure("timeout", new ScopeTimeoutError("Scoped skill timed out"));
@@ -361,6 +371,82 @@ function createMinimalResourceLoader(): ResourceLoader {
     getAppendSystemPromptSources: () => [],
     extendResources: () => {},
     reload: async () => {},
+  };
+}
+
+function createChildSkillTool(request: ScopeBackendRequest, childResults: SkillResult[]): ToolDefinition {
+  const operationSchema = Type.Union([Type.Literal("read"), Type.Literal("list"), Type.Literal("search")]);
+  const promptRefSchema = Type.Union([
+    Type.Object({
+      kind: Type.Literal("inline"),
+      name: Type.String({ minLength: 1, maxLength: 128 }),
+      content: Type.String({ maxLength: 262_144 }),
+    }, { additionalProperties: false }),
+    Type.Object({
+      kind: Type.Literal("file"),
+      name: Type.String({ minLength: 1, maxLength: 128 }),
+      path: Type.String({ minLength: 1, maxLength: 2_048 }),
+      startLine: Type.Optional(Type.Integer({ minimum: 1 })),
+      endLine: Type.Optional(Type.Integer({ minimum: 1 })),
+    }, { additionalProperties: false }),
+  ]);
+  const schema = Type.Object({
+    skill: Type.String({ minLength: 1, maxLength: 64 }),
+    input: Type.Unknown(),
+    promptRefs: Type.Optional(Type.Array(promptRefSchema, { maxItems: 64 })),
+    resourceGrants: Type.Optional(Type.Array(Type.Object({
+      path: Type.String({ minLength: 1, maxLength: 2_048 }),
+      kind: Type.Union([Type.Literal("file"), Type.Literal("directory")]),
+      operations: Type.Array(operationSchema, { minItems: 1, maxItems: 3 }),
+    }, { additionalProperties: false }), { maxItems: 128 })),
+    accessMode: Type.Optional(Type.Union([Type.Literal("SEALED"), Type.Literal("BOUNDED"), Type.Literal("PROJECT")])),
+    budgetOverride: Type.Optional(Type.Object({
+      maxTurns: Type.Optional(Type.Integer({ minimum: 1 })),
+      maxToolCalls: Type.Optional(Type.Integer({ minimum: 1 })),
+      timeoutMs: Type.Optional(Type.Integer({ minimum: 1 })),
+      maxPromptBytes: Type.Optional(Type.Integer({ minimum: 1 })),
+      maxResultBytes: Type.Optional(Type.Integer({ minimum: 1 })),
+    }, { additionalProperties: false })),
+  }, { additionalProperties: false });
+
+  return defineTool({
+    name: "scope_invoke_skill",
+    label: "Invoke child scoped skill",
+    description: "Start one allowed child Skill in a fresh disposable Scope and return only its Runtime-validated structured result.",
+    promptSnippet: "Delegate one typed subtask to a fresh child Scope",
+    promptGuidelines: [
+      `Only these child Skills are allowed: ${request.skill.delegationPolicy.allowedSkills.join(", ")}.`,
+      "Each call creates a new Session; child messages and tool history are not inherited or returned.",
+      "Pass the smallest input and a resource-grant subset of this Scope. Use the returned scope:// ID as evidence when aggregating.",
+    ],
+    executionMode: "parallel",
+    parameters: schema,
+    async execute(_toolCallId, params, signal, onUpdate) {
+      request.onTrace?.("child_tool_attempt", { skill: params.skill, ordinal: childResults.length + 1 });
+      onUpdate?.({ content: [{ type: "text", text: `Starting child Skill ${params.skill}…` }], details: undefined });
+      const result = await request.invokeChild?.(params as SkillInvocation, signal ?? request.signal);
+      if (!result) throw new Error("Child Scope invocation is unavailable");
+      childResults.push(result);
+      const compact = projectSkillResultForCaller(result);
+      return {
+        content: [{ type: "text", text: JSON.stringify(compact) }],
+        details: result,
+      };
+    },
+  });
+}
+
+function projectSkillResultForCaller(result: SkillResult): Record<string, unknown> {
+  return {
+    status: result.status,
+    summary: result.summary,
+    data: result.data,
+    evidenceRefs: result.evidenceRefs,
+    requestedResources: result.requestedResources,
+    warnings: result.warnings,
+    error: result.error,
+    scopeId: result.scopeId,
+    skill: result.skill,
   };
 }
 

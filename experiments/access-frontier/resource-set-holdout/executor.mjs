@@ -634,6 +634,16 @@ class ResourceSetSmokeClient {
 
   async complete() {
     this.calls += 1;
+    const runtimeLine = uniqueContainingLine(
+      await readFile(resolve(projectRoot, "src/pi/runtime.ts"), "utf8"),
+      "if (completion.status === \"NEED_CONTEXT\" && requested.length === 0)",
+      "scripted-smoke:runtime",
+    );
+    const readmeLine = uniqueContainingLine(
+      await readFile(resolve(projectRoot, "src/pi/README.md"), "utf8"),
+      "v0.1 不会自动扩权，父级可审阅后发起一次新 Scope。",
+      "scripted-smoke:pi-readme",
+    );
     const message = this.calls === 1
       ? toolCall("search-set", "scope_search_set", { resourceSet: "authorized-repo", query: "NEED_CONTEXT", maxResults: 20 })
       : toolCall("submit", "submit_result", {
@@ -641,8 +651,8 @@ class ResourceSetSmokeClient {
         summary: "NEED_CONTEXT requests are parent-reviewed and restarted as a new Scope.",
         facts: { execution: "parent-new-scope", requestStatus: "NEED_CONTEXT" },
         evidence: [
-          { path: "repo/src/pi/runtime.ts", startLine: 495, endLine: 495 },
-          { path: "repo/src/pi/README.md", startLine: 47, endLine: 47 },
+          { path: "repo/src/pi/runtime.ts", startLine: runtimeLine, endLine: runtimeLine },
+          { path: "repo/src/pi/README.md", startLine: readmeLine, endLine: readmeLine },
         ],
         confidence: 1,
       });

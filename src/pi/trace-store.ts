@@ -30,6 +30,11 @@ const KNOWN_ERROR_CODES = new Set([
   "ACCESS_MODE_NOT_ALLOWED",
   "BUDGET_EXCEEDED",
   "CANCELLED",
+  "CHILD_ACCESS_EXPANSION",
+  "CHILD_CONCURRENCY_LIMIT",
+  "CHILD_GRANT_EXPANSION",
+  "CHILD_SCOPE_LIMIT",
+  "CHILD_SKILL_NOT_ALLOWED",
   "COMPLETION_SCHEMA_INVALID",
   "COMPLETION_HAS_SIBLING_TOOL",
   "DUPLICATE_COMPLETION",
@@ -56,12 +61,16 @@ const KNOWN_ERROR_CODES = new Set([
   "SEALED",
   "SKILL_NAME_MISMATCH",
   "SKILL_NOT_FOUND",
+  "SCOPE_DEPTH_EXCEEDED",
   "TIMEOUT",
   "UNAUTHORIZED",
 ]);
 const KNOWN_TRACE_EVENTS = new Set([
   "scope_started",
   "skill_loaded",
+  "child_tool_attempt",
+  "child_scope_started",
+  "child_scope_finished",
   "tool_attempt",
   "turn_start",
   "tool_start",
@@ -84,6 +93,7 @@ const USAGE_FIELDS = [
   "cost",
   "wallTimeMs",
 ] as const;
+const TREE_USAGE_FIELDS = ["scopes", ...USAGE_FIELDS.filter((field) => field !== "wallTimeMs")] as const;
 const AUDIT_COUNT_FIELDS = ["attempts", "denials", "actualReadResources", "modelVisibleResources", "canaryHits"] as const;
 
 export class TraceStore {
@@ -180,6 +190,9 @@ function projectManifest(value: unknown): Record<string, unknown> {
   copyString(source, projected, "scopeId");
   copyString(source, projected, "invocationId");
   copyString(source, projected, "parentSessionId");
+  copyString(source, projected, "parentScopeId");
+  copyString(source, projected, "rootScopeId");
+  copyInteger(source, projected, "depth");
   copyString(source, projected, "requestedSkill");
   copyString(source, projected, "requestedAccessMode");
   copyString(source, projected, "accessMode");
@@ -192,6 +205,20 @@ function projectManifest(value: unknown): Record<string, unknown> {
   }
   const budget = projectNumericRecord(source.budget, BUDGET_FIELDS);
   if (budget) projected.budget = budget;
+  const delegation = asRecord(source.delegationPolicy);
+  if (delegation) {
+    const projectedDelegation: Record<string, unknown> = {};
+    if (Array.isArray(delegation.allowedSkills)) {
+      const allowedSkillHashes = delegation.allowedSkills
+        .filter((skill): skill is string => typeof skill === "string")
+        .map((skill) => fingerprintText(skill).sha256);
+      projectedDelegation.allowedSkillHashes = allowedSkillHashes;
+      projectedDelegation.allowedSkillCount = allowedSkillHashes.length;
+    }
+    copyInteger(delegation, projectedDelegation, "maxChildScopes");
+    copyInteger(delegation, projectedDelegation, "maxConcurrency");
+    if (Object.keys(projectedDelegation).length > 0) projected.delegationPolicy = projectedDelegation;
+  }
   if (Object.hasOwn(source, "input")) {
     const input = fingerprint(source.input);
     projected.inputHash = input.sha256;
@@ -231,8 +258,9 @@ function projectEventData(type: string, value: unknown): Record<string, unknown>
   if (type === "skill_loaded") {
     copyString(source, projected, "name");
     copyString(source, projected, "version");
-  } else if (type === "tool_attempt" || type === "tool_start" || type === "tool_end") {
+  } else if (type === "tool_attempt" || type === "tool_start" || type === "tool_end" || type === "child_tool_attempt") {
     copyString(source, projected, "tool");
+    copySensitiveString(source, projected, "skill");
     copyInteger(source, projected, "ordinal");
     copyBoolean(source, projected, "isError");
     if (typeof source.toolCallId === "string") projected.toolCallIdHash = fingerprintText(source.toolCallId).sha256;
@@ -248,6 +276,14 @@ function projectEventData(type: string, value: unknown): Record<string, unknown>
   } else if (type === "completion_accepted") {
     copyKnownStatus(source, projected, "status");
     copyInteger(source, projected, "bytes");
+  } else if (type === "child_scope_started" || type === "child_scope_finished") {
+    copyInteger(source, projected, "ordinal");
+    copyInteger(source, projected, "depth");
+    copySensitiveString(source, projected, "skill");
+    copySensitiveString(source, projected, "scopeId");
+    copyKnownStatus(source, projected, "status");
+    const usage = projectNumericRecord(source.usage, TREE_USAGE_FIELDS);
+    if (usage) projected.treeUsage = usage;
   } else if (type === "scope_finished") {
     copyKnownStatus(source, projected, "status");
     const usage = projectNumericRecord(source.usage, USAGE_FIELDS);
@@ -270,6 +306,9 @@ function projectResult(value: unknown): Record<string, unknown> {
   copyString(source, projected, "scopeId");
   copyString(source, projected, "invocationId");
   copyString(source, projected, "parentSessionId");
+  copyString(source, projected, "parentScopeId");
+  copyString(source, projected, "rootScopeId");
+  copyInteger(source, projected, "depth");
   copyString(source, projected, "traceId");
   copyString(source, projected, "startedAt");
   copyString(source, projected, "endedAt");
@@ -298,6 +337,9 @@ function projectResult(value: unknown): Record<string, unknown> {
 
   const usage = projectNumericRecord(source.usage, USAGE_FIELDS);
   if (usage) projected.usage = usage;
+  const treeUsage = projectNumericRecord(source.treeUsage, TREE_USAGE_FIELDS);
+  if (treeUsage) projected.treeUsage = treeUsage;
+  projectCollectionDigest(source, projected, "childScopes", "childScopeCount");
   const resourceAudit = projectResourceAudit(source.resourceAudit);
   if (resourceAudit) projected.resourceAudit = resourceAudit;
   const error = projectError(source.status, source.error);

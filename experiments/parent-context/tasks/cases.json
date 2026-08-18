@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "parent-context.tasks.v1",
+  "families": [
+    {
+      "id": "deployment-toggle",
+      "question": "May the deployment proceed?",
+      "decisionRule": "Return ALLOW only when constraintFact is exactly gate_enabled and observationFact is exactly health_green; otherwise return BLOCK.",
+      "constraintFact": "gate_enabled",
+      "observationFact": "health_green",
+      "expectedDecision": "ALLOW",
+      "constraintContext": "The release policy requires its protected feature gate to be enabled.",
+      "observationContext": "The current production health window is green."
+    },
+    {
+      "id": "schema-rollout",
+      "question": "May the schema-v3 producer rollout proceed?",
+      "decisionRule": "Return ALLOW only when constraintFact is exactly consumer_v3_ready and observationFact is exactly producer_v3_staged; otherwise return BLOCK.",
+      "constraintFact": "consumer_v3_ready",
+      "observationFact": "producer_v3_staged",
+      "expectedDecision": "ALLOW",
+      "constraintContext": "All required consumers must accept schema v3 before producer activation.",
+      "observationContext": "The producer build is staged but not yet active."
+    },
+    {
+      "id": "client-migration",
+      "question": "May legacy protocol support be removed?",
+      "decisionRule": "Return ALLOW only when constraintFact is exactly minimum_supported_2_4 and observationFact is exactly oldest_active_2_6; otherwise return BLOCK.",
+      "constraintFact": "minimum_supported_2_4",
+      "observationFact": "oldest_active_2_6",
+      "expectedDecision": "ALLOW",
+      "constraintContext": "Removal is permitted when every active client is newer than the minimum supported line.",
+      "observationContext": "The oldest active client cohort has already advanced beyond the minimum line."
+    },
+    {
+      "id": "error-budget",
+      "question": "May the risky optimization be enabled?",
+      "decisionRule": "Return ALLOW only when constraintFact is exactly remaining_budget_12 and observationFact is exactly predicted_burn_7; otherwise return BLOCK.",
+      "constraintFact": "remaining_budget_12",
+      "observationFact": "predicted_burn_7",
+      "expectedDecision": "ALLOW",
+      "constraintContext": "The rollout must fit inside the remaining error budget.",
+      "observationContext": "The forecasted burn is lower than the remaining budget."
+    },
+    {
+      "id": "backup-quorum",
+      "question": "May the primary database maintenance begin?",
+      "decisionRule": "Return ALLOW only when constraintFact is exactly required_replicas_3 and observationFact is exactly healthy_replicas_3; otherwise return BLOCK.",
+      "constraintFact": "required_replicas_3",
+      "observationFact": "healthy_replicas_2",
+      "expectedDecision": "BLOCK",
+      "constraintContext": "Maintenance requires three healthy replicas before the primary is stopped.",
+      "observationContext": "Only two replicas currently pass the full health check."
+    }
+  ]
+}

@@ -7,6 +7,7 @@ export interface MaterializedPromptRef {
 }
 
 export function assembleChildPrompt(request: ScopeBackendRequest, refs: MaterializedPromptRef[]): string {
+  const delegation = request.skill.delegationPolicy ?? { allowedSkills: [], maxChildScopes: 0, maxConcurrency: 1 };
   const sections = [
     "# SkillScope execution boundary",
     [
@@ -27,6 +28,14 @@ export function assembleChildPrompt(request: ScopeBackendRequest, refs: Material
       : "No prompt refs were supplied.",
     "# Resource grants (runtime exploration boundary)",
     fencedJson(request.resourceGrants),
+    "# Child Skill delegation",
+    delegation.allowedSkills.length > 0
+      ? [
+          `Allowed child Skills: ${delegation.allowedSkills.join(", ")}.`,
+          `At most ${delegation.maxChildScopes} child Scope(s), concurrency ${delegation.maxConcurrency}.`,
+          "Every scope_invoke_skill call creates a fresh disposable Session. Only its Runtime-validated result returns here.",
+        ].join("\n")
+      : "This Skill may not invoke child Skills.",
     "Do the scoped task now. Cite evidence by resource and locator. If required evidence is outside the grants, return NEED_CONTEXT with requestedResources; do not guess.",
   ];
   return sections.join("\n\n");

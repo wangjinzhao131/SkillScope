@@ -50,6 +50,12 @@ export interface SkillSpec {
     allowedAccessModes: ScopeAccessMode[];
     allowedOperations: ResourceOperation[];
   };
+  /** Explicit child-skill allowlist and per-Scope lifecycle limits. */
+  delegationPolicy: {
+    allowedSkills: string[];
+    maxChildScopes: number;
+    maxConcurrency: number;
+  };
   budget: SkillBudget;
 }
 
@@ -119,6 +125,27 @@ export interface ScopeUsage {
   wallTimeMs: number;
 }
 
+/** Additive usage across one Scope tree. Wall time remains per-Scope. */
+export interface ScopeTreeUsage extends Omit<ScopeUsage, "wallTimeMs"> {
+  scopes: number;
+}
+
+/** Runtime-owned summary of a directly invoked child Scope. */
+export interface ChildScopeSummary {
+  scopeId: string;
+  invocationId: string;
+  parentScopeId: string;
+  rootScopeId: string;
+  depth: number;
+  skill: { name: string; version: string };
+  status: SkillStatus;
+  resultBytes: number;
+  usage: ScopeUsage;
+  treeUsage: ScopeTreeUsage;
+  startedAt: string;
+  endedAt: string;
+}
+
 export interface ResourceAuditSnapshot {
   declared?: unknown;
   granted?: unknown;
@@ -131,10 +158,13 @@ export interface ResourceAuditSnapshot {
 }
 
 export interface SkillResult<TData = unknown> {
-  schemaVersion: "1.0";
+  schemaVersion: "1.1";
   scopeId: string;
   invocationId: string;
   parentSessionId: string;
+  parentScopeId?: string;
+  rootScopeId: string;
+  depth: number;
   skill: { name: string; version: string };
   status: SkillStatus;
   summary: string;
@@ -144,6 +174,8 @@ export interface SkillResult<TData = unknown> {
   warnings: string[];
   error?: { code: string; message: string; retryable: boolean };
   usage: ScopeUsage;
+  treeUsage: ScopeTreeUsage;
+  childScopes: ChildScopeSummary[];
   traceId: string;
   startedAt: string;
   endedAt: string;
@@ -160,6 +192,7 @@ export interface ScopeBackendRequest {
   resourceGrants: ResourceGrant[];
   accessMode: ScopeAccessMode;
   budget: SkillBudget;
+  invokeChild?: (invocation: SkillInvocation, signal?: AbortSignal) => Promise<SkillResult>;
   signal?: AbortSignal;
   hostContext?: unknown;
   onProgress?: (message: string) => void;
@@ -172,6 +205,7 @@ export interface ScopeBackendResult {
   resourceAudit?: ResourceAuditSnapshot;
   /** Snapshot captured immediately before accepting scope_complete. */
   completionResourceAudit?: ResourceAuditSnapshot;
+  childResults?: SkillResult[];
   protocolIssue?: { code: string; message: string };
   terminationReason?: "completed" | "timeout" | "budget" | "cancelled" | "failed";
   error?: Error;
@@ -185,6 +219,9 @@ export interface ScopeBackend {
 export interface ScopeRuntimeContext {
   cwd: string;
   parentSessionId: string;
+  parentScopeId?: string;
+  rootScopeId?: string;
+  depth?: number;
   signal?: AbortSignal;
   hostContext?: unknown;
   onProgress?: (message: string) => void;

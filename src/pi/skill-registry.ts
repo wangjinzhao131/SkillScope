@@ -57,6 +57,9 @@ function parseSkillSpec(value: unknown, source: string): SkillSpec {
   const allowedTools = requireStringArray(manifest.allowedTools, "allowedTools");
   const allowedAccessModes = requireStringArray(resourcePolicy.allowedAccessModes, "resourcePolicy.allowedAccessModes");
   const allowedOperations = requireStringArray(resourcePolicy.allowedOperations, "resourcePolicy.allowedOperations");
+  const delegationPolicy = manifest.delegationPolicy === undefined
+    ? { allowedSkills: [], maxChildScopes: 0, maxConcurrency: 1 }
+    : parseDelegationPolicy(requireRecord(manifest.delegationPolicy, `${source}#delegationPolicy`));
 
   for (const tool of allowedTools) if (!TOOL_NAMES.has(tool)) throw new SkillRegistryError("INVALID_MANIFEST", `Unsupported allowed tool: ${tool}`);
   for (const mode of allowedAccessModes) if (!ACCESS_MODES.has(mode)) throw new SkillRegistryError("INVALID_MANIFEST", `Unsupported access mode: ${mode}`);
@@ -85,8 +88,30 @@ function parseSkillSpec(value: unknown, source: string): SkillSpec {
       allowedAccessModes: allowedAccessModes as SkillSpec["resourcePolicy"]["allowedAccessModes"],
       allowedOperations: allowedOperations as SkillSpec["resourcePolicy"]["allowedOperations"],
     },
+    delegationPolicy,
     budget: parseBudget(budgetRecord),
   };
+}
+
+function parseDelegationPolicy(value: Record<string, unknown>): SkillSpec["delegationPolicy"] {
+  const allowedSkills = requireStringArray(value.allowedSkills, "delegationPolicy.allowedSkills");
+  for (const skill of allowedSkills) {
+    if (!SKILL_NAME.test(skill)) {
+      throw new SkillRegistryError("INVALID_MANIFEST", `delegationPolicy.allowedSkills contains an invalid skill name: ${skill}`);
+    }
+  }
+  const maxChildScopes = requireNonNegativeInteger(value.maxChildScopes, "delegationPolicy.maxChildScopes");
+  const maxConcurrency = requirePositiveInteger(value.maxConcurrency, "delegationPolicy.maxConcurrency");
+  if (allowedSkills.length === 0 && maxChildScopes !== 0) {
+    throw new SkillRegistryError("INVALID_MANIFEST", "maxChildScopes must be 0 when allowedSkills is empty");
+  }
+  if (allowedSkills.length > 0 && maxChildScopes === 0) {
+    throw new SkillRegistryError("INVALID_MANIFEST", "maxChildScopes must be positive when allowedSkills is non-empty");
+  }
+  if (maxConcurrency > Math.max(1, maxChildScopes)) {
+    throw new SkillRegistryError("INVALID_MANIFEST", "maxConcurrency cannot exceed maxChildScopes");
+  }
+  return { allowedSkills, maxChildScopes, maxConcurrency };
 }
 
 function assertSupportedSchema(schema: JsonSchema, field: string): void {
@@ -144,6 +169,13 @@ function requireStringArray(value: unknown, field: string): string[] {
 function requirePositiveInteger(value: unknown, field: string): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0) {
     throw new SkillRegistryError("INVALID_MANIFEST", `${field} must be a positive integer`);
+  }
+  return value;
+}
+
+function requireNonNegativeInteger(value: unknown, field: string): number {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+    throw new SkillRegistryError("INVALID_MANIFEST", `${field} must be a non-negative integer`);
   }
   return value;
 }

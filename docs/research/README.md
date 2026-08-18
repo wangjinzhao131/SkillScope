@@ -9,6 +9,7 @@
 | [高搜索熵访问实验预注册_v1.md](./高搜索熵访问实验预注册_v1.md) | 已完成的五任务、五单元诊断 Pilot；拆分父目录搜索句柄、分片导航、tool budget 与模型 planner |
 | [Planner输出预算实验预注册_v1.md](./Planner输出预算实验预注册_v1.md) | 在高熵 Pilot 观察到 10/10 fallback 后新增；配对检验 catalog 宽度与 planner 输出 token 预算 |
 | [ResourceSet真实仓库快照实验预注册_v1.md](./ResourceSet真实仓库快照实验预注册_v1.md) | 已完成的48-job仓库内snapshot设计；比较exact files、聚合search handle、directory root与Oracle |
+| [父上下文与嵌套SkillScope实验预注册_v1.md](./父上下文与嵌套SkillScope实验预注册_v1.md) | 当前主线：随用随销的主/子Scope、Runtime结构化返回、父上下文占用与端到端稳定性的四条件直接实验 |
 | [Schema 2 Pilot v1 人工复核](../../experiments/access-frontier/reports/schema2-pilot-v1/README.md) | 70-job 五条件结果、forced-undergrant 机制结果、artifact hashes、失败审阅与严格推断边界 |
 | [High-search-entropy Pilot 人工复核](../../experiments/access-frontier/reports/entropy-frontier-v1/README.md) | 50-job 父搜索句柄、分片导航、调用预算与 planner 结果；含 reporting amendment |
 | [Planner output-budget probe 人工复核](../../experiments/access-frontier/reports/planner-budget-v1/README.md) | 60-trial planner-only 结果；区分 forced-tool 协议完成、catalog 宽度、预算与实际选择性 |
