@@ -34,6 +34,10 @@ The follow-up [entropy-frontier suite](./entropy-frontier/README.md) ran five ne
 
 That [planner output-budget probe](./reports/planner-budget-v1/README.md) completed 60 planner-only trials. Root catalogs produced 10/10 valid first-attempt plans at every budget. Sixteen-shard catalogs produced 0/10, 3/10, and 9/10 valid plans at 512, 1024, and 2048 tokens respectively, but every valid sharded plan selected all 16 entries. The budget fixes protocol completion, not opaque-catalog selectivity; this is evidence against using the current LLM planner as the default least-authority mechanism.
 
+## Next pre-data diagnostic: exact-file ResourceSet
+
+The [ResourceSet repository-snapshot suite](./resource-set-holdout/README.md) moves from opaque synthetic shards to six maintenance questions over 24 committed files from this repository. Its experimental `scope_search_set` can search only a frozen list of exact-file search grants; it cannot authorize the parent directory. The 48-job design pairs Oracle files, exact files without aggregation, the same exact files with the handle, and a directory-root handle. The local result is design and key-free scripted evidence only; an effect claim requires a clean descriptor and a completed live matrix.
+
 ## Commands
 
 Run the local, key-free contract smoke first:

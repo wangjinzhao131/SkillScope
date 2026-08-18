@@ -139,6 +139,7 @@ export class ResourceBroker {
   #directories;
   #declaredGrants;
   #grantedGrants;
+  #resourceSets;
   #attempted = new Map();
   #actualRead = new Map();
   #modelVisible = new Set();
@@ -157,6 +158,7 @@ export class ResourceBroker {
     mode = ACCESS_MODES.BOUNDED,
     declaredGrants,
     grants = [],
+    resourceSets = [],
     canaries = [],
     promptRefs = [],
     limits = {},
@@ -186,12 +188,14 @@ export class ResourceBroker {
       this.#grantedGrants = normalizedConfiguredGrants;
       assertGrantedSubset(this.#grantedGrants, this.#declaredGrants);
     }
+    this.#resourceSets = normalizeResourceSets(resourceSets, this.#files, this.#mode, this.#grantedGrants);
 
     this.#event("broker_initialized", {
       mode: this.#mode,
       fileCount: this.#files.size,
       declaredGrantCount: this.#declaredGrants.length,
       grantedGrantCount: this.#grantedGrants.length,
+      resourceSetCount: this.#resourceSets.size,
     });
 
     this.#promptMaterials = this.#resolvePromptRefs(promptRefs);
@@ -399,6 +403,96 @@ export class ResourceBroker {
     return result;
   }
 
+  /**
+   * Search across a named set of exact-file search grants.
+   *
+   * A ResourceSet is only a navigation handle: every member must already have
+   * an exact BOUNDED file grant containing the search operation. The handle
+   * cannot name a parent directory, discover future files, or widen access.
+   */
+  searchSet(resourceSetId, query, options = {}) {
+    const rawId = printableRawPath(resourceSetId);
+    const handlePath = `@resource-set/${rawId}`;
+    const sequence = ++this.#sequence;
+    if (this.#mode === ACCESS_MODES.SEALED) {
+      this.#recordAttempt("search", handlePath, handlePath, false, "SEALED", sequence);
+      this.#deny("SEALED", "search", handlePath, handlePath, "SEALED scopes do not expose resource tools", sequence);
+    }
+    const resourceSet = typeof resourceSetId === "string" ? this.#resourceSets.get(resourceSetId) : undefined;
+    if (!resourceSet) {
+      this.#recordAttempt("search", handlePath, handlePath, false, "UNAUTHORIZED", sequence);
+      this.#deny("UNAUTHORIZED", "search", handlePath, handlePath, "ResourceSet is outside the effective grant", sequence);
+    }
+    if (typeof query !== "string" || query.length === 0) {
+      this.#recordAttempt("search", handlePath, handlePath, false, "INVALID_ARGUMENT", sequence);
+      this.#deny("INVALID_ARGUMENT", "search", handlePath, handlePath, "search query must be a non-empty string", sequence);
+    }
+    this.#recordAttempt("search", handlePath, handlePath, true, undefined, sequence);
+
+    const caseSensitive = booleanOption(options.caseSensitive, true, "caseSensitive");
+    const maxResults = integerOption(
+      options.maxResults,
+      this.#limits.maxSearchResults,
+      "maxResults",
+      { minimum: 1, maximum: this.#limits.maxSearchResults },
+    );
+    const needle = caseSensitive ? query : query.toLocaleLowerCase("en-US");
+    const matches = [];
+    let scannedFiles = 0;
+    let truncated = false;
+    outer: for (const candidate of resourceSet.members) {
+      const content = this.#files.get(candidate).content;
+      this.#recordActualRead(candidate, "search");
+      scannedFiles += 1;
+      const lines = content.split("\n");
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+        const haystack = caseSensitive ? lines[lineIndex] : lines[lineIndex].toLocaleLowerCase("en-US");
+        let fromIndex = 0;
+        while (fromIndex <= haystack.length) {
+          const columnIndex = haystack.indexOf(needle, fromIndex);
+          if (columnIndex === -1) break;
+          const excerpt = excerptAround(lines[lineIndex], columnIndex, this.#limits.maxSearchLineChars);
+          matches.push({
+            path: candidate,
+            line: lineIndex + 1,
+            column: columnIndex + 1,
+            text: excerpt.text,
+            textStartColumn: excerpt.start + 1,
+          });
+          if (matches.length >= maxResults) {
+            truncated = true;
+            break outer;
+          }
+          fromIndex = columnIndex + Math.max(needle.length, 1);
+        }
+      }
+    }
+
+    const result = {
+      resourceSet: resourceSet.id,
+      query,
+      caseSensitive,
+      matches,
+      truncated,
+    };
+    const visiblePaths = [...new Set(matches.map((match) => match.path))];
+    this.#event("resource_set_searched", {
+      operation: "search",
+      resourceSetId: resourceSet.id,
+      queryHash: sha256(query),
+      memberCount: resourceSet.members.length,
+      scannedFiles,
+      returnedMatches: matches.length,
+      truncated,
+    });
+    this.#recordModelVisibility(result, {
+      source: `tool:search-set:${resourceSet.id}`,
+      resourcePaths: visiblePaths,
+      kind: "tool_result",
+    });
+    return result;
+  }
+
   /** Generic adapter entry point for tool routers. */
   execute(operation, args = {}) {
     const canonicalOperation = normalizeOperation(operation);
@@ -460,6 +554,10 @@ export class ResourceBroker {
       mode: this.#mode,
       declaredSet: this.#declaredGrants.map((grant) => this.#redactGrant(grant)),
       grantedSet: this.#grantedGrants.map((grant) => this.#redactGrant(grant)),
+      resourceSets: [...this.#resourceSets.values()].map((resourceSet) => ({
+        id: resourceSet.id,
+        members: resourceSet.members.map((path) => this.#redact(path)),
+      })),
       attemptedSet: [...new Set(attemptedOperations.map((attempt) => attempt.path))].sort(compareStrings),
       attemptedOperations,
       actualReadSet: [...this.#actualRead.keys()].map((path) => this.#redact(path)).sort(compareStrings),
@@ -780,6 +878,47 @@ function normalizeGrantList(grants, files) {
     deduplicated.set(key, grant);
   }
   return [...deduplicated.values()].sort(compareGrants);
+}
+
+function normalizeResourceSets(resourceSets, files, mode, grantedGrants) {
+  if (!Array.isArray(resourceSets)) throw new TypeError("resourceSets must be an array");
+  if (resourceSets.length > 0 && mode !== ACCESS_MODES.BOUNDED) {
+    throw new TypeError("ResourceSets are currently restricted to BOUNDED exact-file grants");
+  }
+  const normalized = new Map();
+  for (let index = 0; index < resourceSets.length; index += 1) {
+    const resourceSet = resourceSets[index];
+    if (!isPlainObject(resourceSet)) throw new TypeError(`resourceSets[${index}] must be an object`);
+    const unknown = Object.keys(resourceSet).filter((key) => !["id", "members"].includes(key));
+    if (unknown.length > 0) throw new TypeError(`resourceSets[${index}] contains unknown keys: ${unknown.join(", ")}`);
+    if (typeof resourceSet.id !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/u.test(resourceSet.id)) {
+      throw new TypeError(`resourceSets[${index}].id must be a safe 1-64 character identifier`);
+    }
+    if (normalized.has(resourceSet.id)) throw new TypeError(`Duplicate ResourceSet id: ${resourceSet.id}`);
+    if (!Array.isArray(resourceSet.members) || resourceSet.members.length === 0) {
+      throw new TypeError(`resourceSets[${index}].members must be a non-empty array`);
+    }
+    const members = [...new Set(resourceSet.members.map((member) => normalizeResourcePath(member, { allowRoot: false })))].sort(compareStrings);
+    if (members.length !== resourceSet.members.length) {
+      throw new TypeError(`resourceSets[${index}].members must not contain duplicates`);
+    }
+    for (const member of members) {
+      if (!files.has(member)) throw new TypeError(`ResourceSet ${resourceSet.id} member is not a file: ${member}`);
+      const exactSearchGrant = grantedGrants.some((grant) => (
+        grant.kind === "file"
+        && grant.path === member
+        && grant.operations.includes("search")
+      ));
+      if (!exactSearchGrant) {
+        throw new TypeError(`ResourceSet ${resourceSet.id} member lacks an exact-file search grant: ${member}`);
+      }
+    }
+    normalized.set(resourceSet.id, Object.freeze({
+      id: resourceSet.id,
+      members: Object.freeze(members),
+    }));
+  }
+  return normalized;
 }
 
 function normalizeGrant(grant, files, index) {

@@ -209,6 +209,54 @@ test("file grants are exact and cannot carry list permission", () => {
   );
 });
 
+test("ResourceSet searches across exact-file grants without granting their parent directory", () => {
+  const broker = new ResourceBroker({
+    files: PROJECT_FILES,
+    mode: "BOUNDED",
+    grants: [
+      { path: "src/auth/login.js", kind: "file", operations: ["read", "search"] },
+      { path: "docs/readme.md", kind: "file", operations: ["read", "search"] },
+    ],
+    resourceSets: [{ id: "evidence", members: ["src/auth/login.js", "docs/readme.md"] }],
+  });
+
+  const result = broker.searchSet("evidence", "Documentation");
+  assert.deepEqual(result.matches.map((match) => match.path), ["docs/readme.md"]);
+  assertAccessCode(() => broker.list("src"), "UNAUTHORIZED");
+  assertAccessCode(() => broker.searchSet("missing", "needle"), "UNAUTHORIZED");
+
+  const snapshot = broker.snapshot();
+  assert.deepEqual(snapshot.resourceSets, [{
+    id: "evidence",
+    members: ["docs/readme.md", "src/auth/login.js"],
+  }]);
+  assert.deepEqual(snapshot.actualReadSet, ["docs/readme.md", "src/auth/login.js"]);
+  assert.deepEqual(snapshot.modelVisibleSet, ["docs/readme.md"]);
+  assert.ok(snapshot.attemptedSet.includes("@resource-set/evidence"));
+  assert.equal(snapshot.events.some((event) => event.type === "resource_set_searched"), true);
+});
+
+test("ResourceSet rejects directory coverage and exact files without search authority", () => {
+  assert.throws(
+    () => new ResourceBroker({
+      files: PROJECT_FILES,
+      mode: "BOUNDED",
+      grants: [{ path: "src/auth", kind: "directory", operations: ["read", "search"] }],
+      resourceSets: [{ id: "evidence", members: ["src/auth/login.js"] }],
+    }),
+    /lacks an exact-file search grant/,
+  );
+  assert.throws(
+    () => new ResourceBroker({
+      files: PROJECT_FILES,
+      mode: "BOUNDED",
+      grants: [{ path: "src/auth/login.js", kind: "file", operations: ["read"] }],
+      resourceSets: [{ id: "evidence", members: ["src/auth/login.js"] }],
+    }),
+    /lacks an exact-file search grant/,
+  );
+});
+
 test("list returns deterministic immediate or recursive entries", () => {
   const broker = new ResourceBroker({ files: PROJECT_FILES, mode: "PROJECT" });
   assert.deepEqual(broker.list("src").entries, [

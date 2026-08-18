@@ -64,6 +64,27 @@ broker.recordModelVisibility("adapter-created message", {
 const trace = broker.snapshot();
 ```
 
+实验性 `ResourceSet` 只聚合导航，不聚合授权。每个成员必须已经拥有同路径的 exact-file `search` grant；directory grant 不能代替，handle 也不会发现父目录中的未来文件：
+
+```js
+const setBroker = new ResourceBroker({
+  files: [
+    { path: "src/a.js", content: "export const a = 1" },
+    { path: "docs/a.md", content: "a module" },
+  ],
+  mode: "BOUNDED",
+  grants: [
+    { path: "src/a.js", kind: "file", operations: ["read", "search"] },
+    { path: "docs/a.md", kind: "file", operations: ["read", "search"] },
+  ],
+  resourceSets: [{ id: "evidence", members: ["src/a.js", "docs/a.md"] }],
+});
+
+setBroker.searchSet("evidence", "a");
+```
+
+该 API 当前仅进入 access-frontier 的 ResourceSet 实验，不代表 Pi plugin v0.1/SkillSpec 已公开支持。`searchSet` 扫描过的成员进入 `actualReadSet`，只有匹配正文进入模型可见 span。
+
 `read/list/search/execute` 是同步方法，调用方可以直接使用或 `await`。所有成功返回值都是 JSON-compatible object。拒绝通过 `ResourceAccessError` 返回，稳定字段包括：
 
 ```text
@@ -75,7 +96,7 @@ code, operation, rawPath, path, details
 `snapshot()` 返回防御性副本，包含：
 
 ```text
-declaredSet, grantedSet,
+declaredSet, grantedSet, resourceSets,
 attemptedSet, attemptedOperations,
 actualReadSet, actualReadOperations,
 modelVisibleSet, modelVisibleSources,

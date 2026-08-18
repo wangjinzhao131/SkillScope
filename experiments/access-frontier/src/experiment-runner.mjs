@@ -241,6 +241,7 @@ export async function executeJob(job, context) {
       canaryTokens,
       attemptNumber: 1,
       allowResourceRequest: job.condition === "BOUNDED_NEED_RESOURCE",
+      resourceSets: context.resourceSets ?? [],
       signal,
     });
     attempts.push(first);
@@ -270,6 +271,7 @@ export async function executeJob(job, context) {
           canaryTokens,
           attemptNumber: 2,
           allowResourceRequest: false,
+          resourceSets: context.resourceSets ?? [],
           signal,
         });
         attempts.push(second);
@@ -418,6 +420,7 @@ async function executeAttempt({
   canaryTokens,
   attemptNumber,
   allowResourceRequest,
+  resourceSets = [],
   signal,
 }) {
   const broker = await BrokerAdapter.create({
@@ -425,6 +428,7 @@ async function executeAttempt({
     condition: job.condition,
     declaredGrants,
     grants,
+    resourceSets,
     canaryTokens,
   });
   try {
@@ -435,6 +439,7 @@ async function executeAttempt({
       client,
       grants,
       catalog,
+      resourceSets,
       allowResourceRequest,
       seed: job.seed,
       canaryTokens,
@@ -668,17 +673,19 @@ function combineCoordination(attempts, grantPlanning) {
   const catalogBytes = plannerCatalogBytes + attempts.reduce((sum, attempt) => sum + attempt.agent.materialization.catalogBytes, 0);
   const grantsBytes = attempts.reduce((sum, attempt) => sum + attempt.agent.materialization.grantsBytes, 0);
   const responseContractBytes = attempts.reduce((sum, attempt) => sum + attempt.agent.materialization.responseContractBytes, 0);
+  const resourceSetsBytes = attempts.reduce((sum, attempt) => sum + (attempt.agent.materialization.resourceSetsBytes ?? 0), 0);
   return {
     promptRefsBytes,
     catalogBytes,
     grantsBytes,
     responseContractBytes,
+    resourceSetsBytes,
     uniquePromptRefsBytes: Math.max(0, ...attempts.map((attempt) => attempt.agent.materialization.promptRefsBytes)),
     uniqueCatalogBytes: Math.max(0, ...attempts.map((attempt) => attempt.agent.materialization.catalogBytes)),
     uniqueResponseContractBytes: Math.max(0, ...attempts.map((attempt) => attempt.agent.materialization.responseContractBytes)),
     plannerPromptRefsBytes: plannerPromptBytes,
     plannerCatalogBytes,
-    estimatedTokens: Math.ceil((promptRefsBytes + catalogBytes + grantsBytes + responseContractBytes) / 4),
+    estimatedTokens: Math.ceil((promptRefsBytes + catalogBytes + grantsBytes + responseContractBytes + resourceSetsBytes) / 4),
   };
 }
 
@@ -950,7 +957,7 @@ function validateConditions(conditions) {
   }
 }
 
-function validateRuntimeIdentity(jobs, client, overrides) {
+export function validateRuntimeIdentity(jobs, client, overrides) {
   const models = new Set(jobs.map((job) => job.model));
   if (models.size > 1) throw new Error("Manifest mixes multiple models; split it into model-specific manifests");
   const manifestModel = [...models][0];

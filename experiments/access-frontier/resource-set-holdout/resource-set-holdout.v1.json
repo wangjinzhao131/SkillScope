@@ -1,0 +1,136 @@
+{
+  "schemaVersion": "1.0",
+  "suiteId": "resource-set-holdout-v1",
+  "snapshotRoot": "repo",
+  "resourceSetId": "authorized-repo",
+  "candidatePaths": [
+    "package.json",
+    "skills/analyze-evidence/SKILL.md",
+    "skills/analyze-evidence/example.json",
+    "skills/analyze-evidence/scope.json",
+    "src/core/README.md",
+    "src/pi/README.md",
+    "src/pi/completion-tool.ts",
+    "src/pi/contracts.ts",
+    "src/pi/core-resource-gateway.ts",
+    "src/pi/index.ts",
+    "src/pi/json-schema.ts",
+    "src/pi/pi-backend.ts",
+    "src/pi/prompt.ts",
+    "src/pi/resource-gateway.ts",
+    "src/pi/runtime.ts",
+    "src/pi/skill-registry.ts",
+    "src/pi/trace-store.ts",
+    "tests/pi/completion-tool.test.js",
+    "tests/pi/gateway.test.js",
+    "tests/pi/model-runtime.test.js",
+    "tests/pi/pi-backend.test.js",
+    "tests/pi/runtime.test.js",
+    "tests/pi/trace-store.test.js",
+    "tests/plugin-audit/current-behavior.test.js"
+  ],
+  "tasks": [
+    {
+      "id": "af-rs-request-lifecycle",
+      "pairId": "pair-rs-request-lifecycle",
+      "title": "Resource request lifecycle in the Pi adapter",
+      "goal": "Determine which completion status can carry a non-empty requestedResources list and whether SkillScope v0.1 automatically expands access or requires a parent-reviewed new Scope.",
+      "answerCandidates": ["INSUFFICIENT_EVIDENCE", "REQUEST_AUTO_EXPANDS", "REQUEST_PARENT_RESTART", "REQUEST_REJECTED_ALWAYS"],
+      "answerCode": "REQUEST_PARENT_RESTART",
+      "factProperties": {
+        "execution": {"type": "string", "enum": ["automatic-rerun", "parent-new-scope", "rejected"]},
+        "requestStatus": {"type": "string", "enum": ["BLOCKED", "NEED_CONTEXT", "PARTIAL"]}
+      },
+      "facts": {"execution": "parent-new-scope", "requestStatus": "NEED_CONTEXT"},
+      "evidence": [
+        {"sourcePath": "src/pi/runtime.ts", "contains": "if (completion.status === \"NEED_CONTEXT\" && requested.length === 0)", "claim": "The runtime requires a non-empty resource request for NEED_CONTEXT."},
+        {"sourcePath": "src/pi/README.md", "contains": "v0.1 不会自动扩权，父级可审阅后发起一次新 Scope。", "claim": "The adapter leaves approval and a new Scope to the parent."}
+      ]
+    },
+    {
+      "id": "af-rs-completion-order",
+      "pairId": "pair-rs-completion-order",
+      "title": "Completion ordering and sibling tools",
+      "goal": "Identify the duplicate scope_complete policy and whether a completion may consume evidence returned by a sibling tool in the same assistant tool batch.",
+      "answerCandidates": ["DUPLICATES_IGNORED", "FIRST_VALID_SEPARATE_TURN", "INSUFFICIENT_EVIDENCE", "LAST_VALID_SAME_BATCH"],
+      "answerCode": "FIRST_VALID_SEPARATE_TURN",
+      "factProperties": {
+        "duplicatePolicy": {"type": "string", "enum": ["fail-closed", "first-wins-success", "last-wins"]},
+        "evidenceTiming": {"type": "string", "enum": ["later-turn-required", "same-batch-allowed", "unverified"]}
+      },
+      "facts": {"duplicatePolicy": "fail-closed", "evidenceTiming": "later-turn-required"},
+      "evidence": [
+        {"sourcePath": "src/pi/completion-tool.ts", "contains": "code: \"DUPLICATE_COMPLETION\"", "claim": "A second accepted completion is a duplicate-completion protocol issue."},
+        {"sourcePath": "src/pi/README.md", "contains": "要求下一轮单独提交", "claim": "Completion sharing a sibling-tool batch must be resubmitted on a later turn."}
+      ]
+    },
+    {
+      "id": "af-rs-trace-contract",
+      "pairId": "pair-rs-trace-contract",
+      "title": "Trace persistence contract",
+      "goal": "Identify the default external Trace format and whether its multi-file persistence is transactional.",
+      "answerCandidates": ["FULLTEXT_TRANSACTIONAL", "HASHED_NONTRANSACTIONAL", "INSUFFICIENT_EVIDENCE", "MEMORY_ONLY"],
+      "answerCode": "HASHED_NONTRANSACTIONAL",
+      "factProperties": {
+        "atomicity": {"type": "string", "enum": ["non-transactional", "transactional", "unknown"]},
+        "format": {"type": "string", "enum": ["fulltext-v1", "memory-only", "metadata-only-v1"]}
+      },
+      "facts": {"atomicity": "non-transactional", "format": "metadata-only-v1"},
+      "evidence": [
+        {"sourcePath": "src/pi/trace-store.ts", "contains": "const TRACE_FORMAT = \"metadata-only-v1\"", "claim": "The implementation names the default trace format metadata-only-v1."},
+        {"sourcePath": "src/pi/README.md", "contains": "Trace 的多个文件不是事务性提交", "claim": "The documented Trace persistence is not transactional."}
+      ]
+    },
+    {
+      "id": "af-rs-provider-bridge",
+      "pairId": "pair-rs-provider-bridge",
+      "title": "Child provider bridge boundary",
+      "goal": "Determine the only supported model transport for the v0.1 child bridge and whether custom native stream providers are cloned.",
+      "answerCandidates": ["INSUFFICIENT_EVIDENCE", "NATIVE_STREAM_CLONED", "OAUTH_ANY_TRANSPORT", "OPENAI_APIKEY_ONLY"],
+      "answerCode": "OPENAI_APIKEY_ONLY",
+      "factProperties": {
+        "nativeProvider": {"type": "string", "enum": ["cloned", "rejected", "unknown"]},
+        "transport": {"type": "string", "enum": ["anthropic-messages", "native-stream", "openai-completions"]}
+      },
+      "facts": {"nativeProvider": "rejected", "transport": "openai-completions"},
+      "evidence": [
+        {"sourcePath": "src/pi/pi-backend.ts", "contains": "if (host.model.api !== \"openai-completions\")", "claim": "The bridge accepts only the openai-completions model API."},
+        {"sourcePath": "src/pi/README.md", "contains": "custom native provider / `streamSimple` provider", "claim": "Custom native stream providers are explicitly outside v0.1 support."}
+      ]
+    },
+    {
+      "id": "af-rs-schema-boundary",
+      "pairId": "pair-rs-schema-boundary",
+      "title": "Runtime JSON Schema subset",
+      "goal": "Identify which union keyword the runtime validator supports and which alternative union keyword is rejected fail-closed at manifest load.",
+      "answerCandidates": ["ANYOF_SUPPORTED_ONEOF_REJECTED", "BOTH_SILENTLY_IGNORED", "INSUFFICIENT_EVIDENCE", "ONEOF_SUPPORTED_ANYOF_REJECTED"],
+      "answerCode": "ANYOF_SUPPORTED_ONEOF_REJECTED",
+      "factProperties": {
+        "supportedUnion": {"type": "string", "enum": ["allOf", "anyOf", "oneOf"]},
+        "unsupportedUnion": {"type": "string", "enum": ["allOf", "anyOf", "oneOf"]}
+      },
+      "facts": {"supportedUnion": "anyOf", "unsupportedUnion": "oneOf"},
+      "evidence": [
+        {"sourcePath": "src/pi/json-schema.ts", "contains": "\"anyOf\",", "claim": "anyOf is in the explicit supported-key set."},
+        {"sourcePath": "src/pi/README.md", "contains": "`$ref`、`oneOf`、`pattern`", "claim": "oneOf is documented among unsupported constraints that fail closed."}
+      ]
+    },
+    {
+      "id": "af-rs-list-materialization",
+      "pairId": "pair-rs-list-materialization",
+      "title": "List-only physical materialization",
+      "goal": "Determine whether a list-only directory snapshot reads file bodies and name the audit field that separately records physical content materialization.",
+      "answerCandidates": ["ALL_CONTENT_PRELOADED", "INSUFFICIENT_EVIDENCE", "MATCHES_ONLY", "NAMES_WITHOUT_CONTENT"],
+      "answerCode": "NAMES_WITHOUT_CONTENT",
+      "factProperties": {
+        "auditField": {"type": "string", "enum": ["actualReadSet", "modelVisibleSet", "physicalMaterializedSet"]},
+        "listContent": {"type": "string", "enum": ["all", "matching-only", "none"]}
+      },
+      "facts": {"auditField": "physicalMaterializedSet", "listContent": "none"},
+      "evidence": [
+        {"sourcePath": "src/pi/core-resource-gateway.ts", "contains": "Metadata-only list grants need filenames, not file contents.", "claim": "The gateway materializes names without file bodies for list-only grants."},
+        {"sourcePath": "src/pi/README.md", "contains": "`resourceAudit.physicalMaterializedSet`", "claim": "Physical materialization is reported separately in physicalMaterializedSet."}
+      ]
+    }
+  ]
+}

@@ -36,7 +36,7 @@ async function loadBrokerModule() {
 }
 
 export class BrokerAdapter {
-  static async create({ task, condition, declaredGrants, grants, canaryTokens = [] }) {
+  static async create({ task, condition, declaredGrants, grants, resourceSets = [], canaryTokens = [] }) {
     const module = await loadBrokerModule();
     const normalizedDeclared = normalizeGrants(declaredGrants);
     const normalizedGrants = normalizeGrants(grants);
@@ -46,6 +46,7 @@ export class BrokerAdapter {
       mode: modeForCondition(condition),
       declaredGrants: normalizedDeclared,
       grants: normalizedGrants,
+      resourceSets,
       canaries: canaryTokens,
       promptRefs: task.promptRefs ?? [],
     });
@@ -56,16 +57,18 @@ export class BrokerAdapter {
       condition,
       declaredGrants: normalizedDeclared,
       grants: normalizedGrants,
+      resourceSets,
     });
   }
 
-  constructor({ broker, module, task, condition, declaredGrants, grants }) {
+  constructor({ broker, module, task, condition, declaredGrants, grants, resourceSets = [] }) {
     this.broker = broker;
     this.module = module;
     this.task = task;
     this.condition = condition;
     this.declaredGrants = declaredGrants;
     this.grants = grants;
+    this.resourceSets = structuredClone(resourceSets);
     this.visibleEvidenceSpans = (task.promptRefs ?? [])
       .filter((ref) => ref.sourcePath && typeof ref.content === "string")
       .map((ref) => {
@@ -109,6 +112,18 @@ export class BrokerAdapter {
         this.#recordVisibleSpans(name, value);
         return ok(value);
       }
+      if (name === "scope_search_set") {
+        const method = this.broker.searchSet;
+        if (typeof method !== "function") throw new Error("ResourceBroker does not implement searchSet()");
+        const value = await Promise.resolve(method.call(
+          this.broker,
+          args.resourceSet,
+          String(args.query ?? ""),
+          { maxResults: args.maxResults },
+        ));
+        this.#recordVisibleSpans(name, value);
+        return ok(value);
+      }
       return failure("UNKNOWN_TOOL", `Unknown resource tool: ${name}`, false);
     } catch (error) {
       const isAccessError =
@@ -129,7 +144,7 @@ export class BrokerAdapter {
         source: "read",
       });
     }
-    if (name === "scope_search") {
+    if (name === "scope_search" || name === "scope_search_set") {
       for (const match of value?.matches ?? []) {
         if (!match?.path || !Number.isInteger(match.line) || typeof match.text !== "string") continue;
         this.visibleEvidenceSpans.push({

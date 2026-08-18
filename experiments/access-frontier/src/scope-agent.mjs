@@ -14,6 +14,7 @@ export async function runScopeAttempt({
   client,
   grants,
   catalog,
+  resourceSets = [],
   allowResourceRequest,
   seed,
   canaryTokens = [],
@@ -25,9 +26,9 @@ export async function runScopeAttempt({
 }) {
   const startedAt = new Date().toISOString();
   const startedNs = process.hrtime.bigint();
-  const built = buildMessages({ task, condition, grants, catalog, allowResourceRequest });
+  const built = buildMessages({ task, condition, grants, catalog, allowResourceRequest, resourceSets });
   const messages = [...built.messages];
-  const tools = buildTools({ task, condition, allowResourceRequest });
+  const tools = buildTools({ task, condition, allowResourceRequest, resourceSets });
   let usage = emptyUsage();
   let toolCalls = 0;
   let schemaRepairCount = 0;
@@ -73,7 +74,7 @@ export async function runScopeAttempt({
       materialization: {
         ...built.materialization,
         estimatedCoordinationTokens: Math.ceil(
-          (built.materialization.catalogBytes + built.materialization.grantsBytes) / 4,
+          (built.materialization.catalogBytes + built.materialization.grantsBytes + (built.materialization.resourceSetsBytes ?? 0)) / 4,
         ),
       },
       promptVisiblePaths: (task.promptRefs ?? []).map((ref) => ref.sourcePath).filter(Boolean),

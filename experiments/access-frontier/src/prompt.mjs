@@ -54,6 +54,27 @@ export const RESOURCE_TOOLS = Object.freeze([
   },
 ]);
 
+function resourceSetSearchTool(resourceSets) {
+  const ids = resourceSets.map((resourceSet) => resourceSet.id);
+  return {
+    type: "function",
+    function: {
+      name: "scope_search_set",
+      description: "Search text across one named ResourceSet. A ResourceSet aggregates only its listed exact-file grants and does not grant the parent directory.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        required: ["resourceSet", "query"],
+        properties: {
+          resourceSet: { type: "string", enum: ids },
+          query: { type: "string", minLength: 1 },
+          maxResults: { type: "integer", minimum: 1, maximum: 100, default: 20 },
+        },
+      },
+    },
+  };
+}
+
 export function submitResultTool(responseContract) {
   if (!responseContract?.answerCode || !responseContract?.facts || !responseContract?.abstention) {
     throw new Error("A validated task.responseContract is required to construct submit_result");
@@ -124,15 +145,16 @@ export const REQUEST_RESOURCE_TOOL = Object.freeze({
   },
 });
 
-export function buildTools({ task, condition, allowResourceRequest }) {
+export function buildTools({ task, condition, allowResourceRequest, resourceSets = [] }) {
   return [
     ...(condition === "SEALED" ? [] : RESOURCE_TOOLS),
+    ...(condition !== "SEALED" && resourceSets.length > 0 ? [resourceSetSearchTool(resourceSets)] : []),
     submitResultTool(task?.responseContract),
     ...(allowResourceRequest ? [REQUEST_RESOURCE_TOOL] : []),
   ];
 }
 
-export function buildMessages({ task, condition, grants, catalog, allowResourceRequest }) {
+export function buildMessages({ task, condition, grants, catalog, allowResourceRequest, resourceSets = [] }) {
   if (!task?.responseContract) throw new Error("task.responseContract is required to build worker messages");
   const promptRefs = task.promptRefs ?? [];
   const promptSections = promptRefs.map((ref, index) => {
@@ -147,6 +169,7 @@ export function buildMessages({ task, condition, grants, catalog, allowResourceR
     : "[]";
   const catalogText = catalog?.length ? JSON.stringify(normalizeGrants(catalog), null, 2) : null;
   const responseContractText = JSON.stringify(task.responseContract, null, 2);
+  const resourceSetText = resourceSets.length > 0 ? JSON.stringify(resourceSets, null, 2) : null;
   const accessInstructions = {
     PROJECT_READ_ONLY: "You may explore the full virtual project with the resource tools.",
     SEALED: "You may use only the injected prompt snapshots; no exploration tools are available.",
@@ -165,6 +188,7 @@ export function buildMessages({ task, condition, grants, catalog, allowResourceR
     "The public response contract lists possible values, not the hidden correct choice. Infer the answer only from visible evidence.",
     "If visible evidence is insufficient, use the contract's abstention answerCode and set every required fact value to null.",
     "When the diagnosis is complete, call submit_result. Do not return a prose-only final answer.",
+    ...(resourceSetText ? ["A ResourceSet is a search-only navigation handle over the exact files listed in that set; it does not authorize their parent directory."] : []),
   ].join("\n");
 
   const userParts = [
@@ -173,6 +197,7 @@ export function buildMessages({ task, condition, grants, catalog, allowResourceR
     `# Injected prompt snapshots\n${promptSections.length ? promptSections.join("\n\n") : "(none)"}`,
     `# Public response contract\n${responseContractText}`,
   ];
+  if (resourceSetText) userParts.push(`# ResourceSet search handles\n${resourceSetText}`);
   if (catalogText && (condition === "BOUNDED_INFERRED" || condition === "BOUNDED_NEED_RESOURCE")) {
     userParts.push(`# Declared resource catalog (metadata only; no file contents)\n${catalogText}`);
   }
@@ -195,6 +220,7 @@ export function buildMessages({ task, condition, grants, catalog, allowResourceR
       grantsBytes: Buffer.byteLength(grantText),
       responseContractHash: sha256(task.responseContract),
       responseContractBytes: Buffer.byteLength(responseContractText),
+      resourceSetsBytes: resourceSetText ? Buffer.byteLength(resourceSetText) : 0,
     },
   };
 }

@@ -33,6 +33,9 @@ const sourceRoots = Object.freeze([
   "docs/research/高搜索熵访问实验预注册_v1.md",
   "experiments/access-frontier/entropy-frontier/planner-budget-probe.mjs",
   "docs/research/Planner输出预算实验预注册_v1.md",
+  "experiments/access-frontier/resource-set-holdout/executor.mjs",
+  "experiments/access-frontier/resource-set-holdout/resource-set-holdout.v1.json",
+  "docs/research/ResourceSet真实仓库快照实验预注册_v1.md",
   "src/core",
 ]);
 const dependencyLockPath = "package-lock.json";
