@@ -38,6 +38,7 @@
     "experiment:run": "node experiments/access-frontier/src/cli.mjs",
     "experiment:analyze": "python3 experiments/access-frontier/analysis/analyze.py",
     "parent-context:smoke": "node experiments/parent-context/src/cli.mjs --smoke",
+    "parent-context:preflight": "node experiments/parent-context/src/cli.mjs --preflight",
     "parent-context:plan": "node experiments/parent-context/src/cli.mjs --plan experiments/parent-context/runs/manifest.json",
     "parent-context:run": "node experiments/parent-context/src/cli.mjs --run --manifest experiments/parent-context/runs/manifest.json --results experiments/parent-context/runs/results.jsonl --concurrency 1",
     "parent-context:analyze": "node experiments/parent-context/src/cli.mjs --analyze --manifest experiments/parent-context/runs/manifest.json --results experiments/parent-context/runs/results.jsonl --output experiments/parent-context/reports/latest"

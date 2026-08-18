@@ -13,6 +13,27 @@ if (args.smoke) {
   const result = await runScriptedSmoke();
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   if (!result.ok) process.exitCode = 1;
+} else if (args.preflight) {
+  const apiKey = process.env.EXPERIMENT_KEY;
+  if (!apiKey) throw new Error("EXPERIMENT_KEY is not set; invoke through the login shell without printing it");
+  const manifest = await buildManifest({ allowDirty: false, repeats: 1 });
+  const blockId = manifest.jobs[0].blockId;
+  const jobs = manifest.jobs.filter((job) => job.blockId === blockId);
+  const { createLiveEnvironment, runParentContextJob } = await import("./live-harness.mjs");
+  const environment = await createLiveEnvironment(apiKey, { skillsRoot: resolve(projectRootPath(), "skills") });
+  try {
+    const records = [];
+    for (const job of jobs) {
+      const record = await runParentContextJob(job, environment);
+      records.push(record);
+      process.stdout.write(`${JSON.stringify({ condition: record.condition, status: record.status, hardPass: record.verification?.hardPass, lifecycle: record.lifecycle?.valid, sentinelVisible: record.sentinel?.visibleInParent, parentContextTokens: record.parentMetrics?.parentProviderContextTokens })}\n`);
+    }
+    const ok = records.every((record) => record.status === "completed" && record.verification?.hardPass === true && record.lifecycle?.valid === true && record.sentinel?.visibleInParent === (record.condition === "INLINE_PARENT"));
+    process.stdout.write(`${JSON.stringify({ ok, kind: "engineering-preflight", blockId, trials: records.length })}\n`);
+    if (!ok) process.exitCode = 1;
+  } finally {
+    await environment.dispose();
+  }
 } else if (args.plan) {
   const manifest = await buildManifest({ allowDirty: args.allowDirty, repeats: args.repeats });
   await writeManifest(args.plan, manifest);
@@ -53,6 +74,7 @@ function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index];
     if (value === "--smoke") result.smoke = true;
+    else if (value === "--preflight") result.preflight = true;
     else if (value === "--plan") result.plan = resolve(required(argv, ++index, value));
     else if (value === "--run") result.run = true;
     else if (value === "--analyze") result.analyze = true;
@@ -79,6 +101,7 @@ function usage() {
   process.stderr.write([
     "Usage:",
     "  node experiments/parent-context/src/cli.mjs --smoke",
+    "  zsh -ilc 'node experiments/parent-context/src/cli.mjs --preflight'",
     "  node experiments/parent-context/src/cli.mjs --plan runs/manifest.json [--repeats 3] [--allow-dirty]",
     "  node experiments/parent-context/src/cli.mjs --run --manifest runs/manifest.json --results runs/results.jsonl [--concurrency 1]",
     "  node experiments/parent-context/src/cli.mjs --analyze --manifest runs/manifest.json --results runs/results.jsonl --output reports/run-id",

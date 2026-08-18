@@ -31,6 +31,7 @@ npm run parent-context:smoke
 Manifest 创建会拒绝 outcome-relevant dirty tree。必须先把实现、语料、本 README、预注册和依赖提交到同一个 clean commit，再用登录 shell 中已有的 `EXPERIMENT_KEY`：
 
 ```bash
+zsh -ilc 'npm run parent-context:preflight'
 npm run parent-context:plan
 zsh -ilc 'npm run parent-context:run'
 npm run parent-context:analyze
