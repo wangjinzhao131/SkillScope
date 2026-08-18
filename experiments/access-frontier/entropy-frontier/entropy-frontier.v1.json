@@ -1,0 +1,108 @@
+{
+  "schemaVersion": "1.0",
+  "suiteId": "entropy-frontier-v1",
+  "namespace": "corpus",
+  "shardCount": 16,
+  "tasks": [
+    {
+      "id": "af-entropy-signing-v2",
+      "pairId": "pair-entropy-signing-v2",
+      "title": "Opaque signing-key archive",
+      "goal": "Diagnose why request r-830 was rejected after a signing-key rotation. Return the answerCode and all necessary evidence paths.",
+      "prompt": "request=r-830\nsymptom=signature rejected after key rotation\n",
+      "promptPath": "tickets/r-830.txt",
+      "answerCode": "STALE_SIGNING_KEY",
+      "answerCandidates": ["INSUFFICIENT_EVIDENCE", "INVALID_SIGNATURE_PAYLOAD", "STALE_SIGNING_KEY", "VERIFIER_UNAVAILABLE"],
+      "facts": {"requestId": "r-830", "usedKey": "k-58", "activeKey": "k-61"},
+      "factProperties": {
+        "requestId": {"type": "string", "pattern": "^r-[0-9]+$"},
+        "usedKey": {"type": "string", "pattern": "^k-[0-9]+$"},
+        "activeKey": {"type": "string", "pattern": "^k-[0-9]+$"}
+      },
+      "evidence": [
+        {"shard": 3, "file": "events.log", "content": "verifier=edge-4 batch=rotate-12\nrequest=r-830 result=SIGNATURE_REJECTED key_id=k-58\n", "startLine": 2, "endLine": 2, "contains": "SIGNATURE_REJECTED key_id=k-58", "claim": "The rejected request used signing key k-58."},
+        {"shard": 14, "file": "runtime.cfg", "content": "region=edge\nactive_key_id=k-61\nprevious_key_id=k-58 retired=true\n", "startLine": 2, "endLine": 3, "contains": "active_key_id=k-61", "claim": "The active key is k-61 and k-58 is retired."}
+      ]
+    },
+    {
+      "id": "af-entropy-release-v2",
+      "pairId": "pair-entropy-release-v2",
+      "title": "Opaque deployment archive",
+      "goal": "Diagnose why deployment d-204 failed its health gate after rollout. Return the answerCode and all necessary evidence paths.",
+      "prompt": "deployment=d-204\nsymptom=health gate rejected after rollout\n",
+      "promptPath": "tickets/d-204.txt",
+      "answerCode": "STALE_DEPLOYMENT_REVISION",
+      "answerCandidates": ["HEALTH_CHECK_BROKEN", "INSUFFICIENT_EVIDENCE", "STALE_DEPLOYMENT_REVISION", "TRAFFIC_DRAIN_INCOMPLETE"],
+      "facts": {"deploymentId": "d-204", "observedSha": "sha-7f2", "currentSha": "sha-9c1"},
+      "factProperties": {
+        "deploymentId": {"type": "string", "pattern": "^d-[0-9]+$"},
+        "observedSha": {"type": "string", "pattern": "^sha-[0-9a-f]+$"},
+        "currentSha": {"type": "string", "pattern": "^sha-[0-9a-f]+$"}
+      },
+      "evidence": [
+        {"shard": 6, "file": "health.log", "content": "gate=service-ready region=blue\ndeployment=d-204 observed_sha=sha-7f2 result=HEALTH_REJECTED\n", "startLine": 2, "endLine": 2, "contains": "observed_sha=sha-7f2", "claim": "The rejected deployment was running sha-7f2."},
+        {"shard": 11, "file": "release.cfg", "content": "service=payments\ncurrent_sha=sha-9c1 healthy=true\nprevious_sha=sha-7f2 retired=true\n", "startLine": 2, "endLine": 3, "contains": "current_sha=sha-9c1", "claim": "sha-9c1 is current and sha-7f2 is retired."}
+      ]
+    },
+    {
+      "id": "af-entropy-cache-v2",
+      "pairId": "pair-entropy-cache-v2",
+      "title": "Opaque cache-routing archive",
+      "goal": "Diagnose why cache request c-551 was routed to a retired region. Return the answerCode and all necessary evidence paths.",
+      "prompt": "request=c-551\nsymptom=cache lookup routed to retired region\n",
+      "promptPath": "tickets/c-551.txt",
+      "answerCode": "STALE_CACHE_ROUTE",
+      "answerCandidates": ["CACHE_KEY_COLLISION", "INSUFFICIENT_EVIDENCE", "ORIGIN_UNAVAILABLE", "STALE_CACHE_ROUTE"],
+      "facts": {"requestId": "c-551", "usedRegion": "region-west-old", "activeRegion": "region-west-new"},
+      "factProperties": {
+        "requestId": {"type": "string", "pattern": "^c-[0-9]+$"},
+        "usedRegion": {"type": "string", "pattern": "^region-[a-z-]+$"},
+        "activeRegion": {"type": "string", "pattern": "^region-[a-z-]+$"}
+      },
+      "evidence": [
+        {"shard": 2, "file": "trace.log", "content": "cache=product-v4 node=edge-8\nrequest=c-551 route=region-west-old result=MISS\n", "startLine": 2, "endLine": 2, "contains": "route=region-west-old", "claim": "The failed request used region-west-old."},
+        {"shard": 15, "file": "routing.cfg", "content": "cache=product-v4\nactive_region=region-west-new\nprevious_region=region-west-old disabled=true\n", "startLine": 2, "endLine": 3, "contains": "active_region=region-west-new", "claim": "region-west-new is active and region-west-old is disabled."}
+      ]
+    },
+    {
+      "id": "af-entropy-worker-v2",
+      "pairId": "pair-entropy-worker-v2",
+      "title": "Opaque worker-policy archive",
+      "goal": "Diagnose why job j-903 stopped after its first timeout. Return the answerCode and all necessary evidence paths.",
+      "prompt": "job=j-903\nsymptom=stopped after first timeout\n",
+      "promptPath": "tickets/j-903.txt",
+      "answerCode": "RETRY_DISABLED",
+      "answerCandidates": ["INSUFFICIENT_EVIDENCE", "QUEUE_DRAINED", "RETRY_DISABLED", "RETRY_EXHAUSTED"],
+      "facts": {"jobId": "j-903", "observedAttempts": 1, "retryLimit": 0},
+      "factProperties": {
+        "jobId": {"type": "string", "pattern": "^j-[0-9]+$"},
+        "observedAttempts": {"type": "integer", "minimum": 0, "maximum": 100},
+        "retryLimit": {"type": "integer", "minimum": 0, "maximum": 100}
+      },
+      "evidence": [
+        {"shard": 8, "file": "jobs.log", "content": "queue=critical worker=w-7\njob=j-903 observed_attempts=1 result=TIMEOUT policy_id=retry-44\n", "startLine": 2, "endLine": 2, "contains": "policy_id=retry-44", "claim": "The job timed out after one attempt under retry-44."},
+        {"shard": 13, "file": "worker.cfg", "content": "policy_id=retry-44\nretry_limit=0\nbackoff_ms=300\n", "startLine": 1, "endLine": 2, "contains": "retry_limit=0", "claim": "retry-44 disables retries."}
+      ]
+    },
+    {
+      "id": "af-entropy-migration-v2",
+      "pairId": "pair-entropy-migration-v2",
+      "title": "Opaque schema-migration archive",
+      "goal": "Diagnose why migration m-42 was rejected by the schema gate. Return the answerCode and all necessary evidence paths.",
+      "prompt": "migration=m-42\nsymptom=schema gate rejected migration\n",
+      "promptPath": "tickets/m-42.txt",
+      "answerCode": "STALE_SCHEMA_VERSION",
+      "answerCandidates": ["INSUFFICIENT_EVIDENCE", "MIGRATION_CHECKSUM_MISMATCH", "SCHEMA_LOCKED", "STALE_SCHEMA_VERSION"],
+      "facts": {"migrationId": "m-42", "observedSchema": "v17", "activeSchema": "v18"},
+      "factProperties": {
+        "migrationId": {"type": "string", "pattern": "^m-[0-9]+$"},
+        "observedSchema": {"type": "string", "pattern": "^v[0-9]+$"},
+        "activeSchema": {"type": "string", "pattern": "^v[0-9]+$"}
+      },
+      "evidence": [
+        {"shard": 5, "file": "audit.log", "content": "gate=schema-primary cluster=db-2\nmigration=m-42 observed_schema=v17 result=SCHEMA_REJECTED\n", "startLine": 2, "endLine": 2, "contains": "observed_schema=v17", "claim": "The rejected migration used schema v17."},
+        {"shard": 16, "file": "schema.cfg", "content": "cluster=db-2\nactive_schema=v18\nprevious_schema=v17 retired=true\n", "startLine": 2, "endLine": 3, "contains": "active_schema=v18", "claim": "v18 is active and v17 is retired."}
+      ]
+    }
+  ]
+}

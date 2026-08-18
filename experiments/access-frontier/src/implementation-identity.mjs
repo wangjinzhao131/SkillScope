@@ -28,6 +28,9 @@ const sourceRoots = Object.freeze([
   "experiments/access-frontier/tasks/response-contract.mjs",
   "experiments/access-frontier/tasks/prompt-provenance.mjs",
   "docs/research/访问边界实验预注册_v2.md",
+  "experiments/access-frontier/entropy-frontier/executor.mjs",
+  "experiments/access-frontier/entropy-frontier/entropy-frontier.v1.json",
+  "docs/research/高搜索熵访问实验预注册_v1.md",
   "src/core",
 ]);
 const dependencyLockPath = "package-lock.json";

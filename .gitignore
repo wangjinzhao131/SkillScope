@@ -12,4 +12,5 @@ coverage/
 # Commit reviewed aggregate reports and hashes, never an uninspected live run.
 experiments/access-frontier/runs/
 experiments/access-frontier/mechanism-suites/runs/
+experiments/access-frontier/entropy-frontier/runs/
 *.corrupt-tail-*
