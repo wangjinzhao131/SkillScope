@@ -26,7 +26,7 @@ if (args.smoke) {
     for (const job of jobs) {
       const record = await runParentContextJob(job, environment);
       records.push(record);
-      process.stdout.write(`${JSON.stringify({ condition: record.condition, status: record.status, hardPass: record.verification?.hardPass, lifecycle: record.lifecycle?.valid, sentinelVisible: record.sentinel?.visibleInParent, parentContextTokens: record.parentMetrics?.parentProviderContextTokens })}\n`);
+      process.stdout.write(`${JSON.stringify({ condition: record.condition, status: record.status, hardPass: record.verification?.hardPass, failureCode: record.verification?.failureCode, lifecycle: record.lifecycle?.valid, scopeStatuses: record.scopes?.map((scope) => `${scope.skill}:${scope.status}`), sentinelVisible: record.sentinel?.visibleInParent, parentContextTokens: record.parentMetrics?.parentProviderContextTokens })}\n`);
     }
     const ok = records.every((record) => record.status === "completed" && record.verification?.hardPass === true && record.lifecycle?.valid === true && record.sentinel?.visibleInParent === (record.condition === "INLINE_PARENT"));
     process.stdout.write(`${JSON.stringify({ ok, kind: "engineering-preflight", blockId, trials: records.length })}\n`);

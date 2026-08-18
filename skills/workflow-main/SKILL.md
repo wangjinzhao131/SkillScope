@@ -13,7 +13,18 @@ batch:
 2. `inspect-observation` with only `observationPath` granted.
 
 Each call must use `BOUNDED`, pass an exact-file grant with `read`,
-and include the matching path in the child input. Verify both child results are
+and use exactly one of these input shapes with no additional keys:
+
+```json
+{"skill":"inspect-constraint","input":{"question":"<the invocation question>","path":"<constraintPath>"},"accessMode":"BOUNDED","resourceGrants":[{"path":"<constraintPath>","kind":"file","operations":["read"]}]}
+```
+
+```json
+{"skill":"inspect-observation","input":{"question":"<the invocation question>","path":"<observationPath>"},"accessMode":"BOUNDED","resourceGrants":[{"path":"<observationPath>","kind":"file","operations":["read"]}]}
+```
+
+Do not pass `decisionRule`, the other packet path, `factType`, or any invented
+field to a leaf Skill. Verify both child results are
 `SUCCESS`, extract their typed `data.value`, and apply `decisionRule` exactly.
 
 Call `scope_complete` exactly once with `decision`, `constraintFact`, and
