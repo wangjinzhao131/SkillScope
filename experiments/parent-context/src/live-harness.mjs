@@ -8,7 +8,7 @@ import {
   createAgentSession,
   createExtensionRuntime,
   defineTool,
-  estimateContextTokens,
+  estimateTokens,
   ModelRegistry,
   ModelRuntime,
   SessionManager,
@@ -450,7 +450,7 @@ function measureParentSession(session, sentinel) {
   const provider = session.getContextUsage();
   return {
     parentProviderContextTokens: provider?.tokens ?? null,
-    parentEstimatedContextTokens: estimateContextTokens(messages).tokens,
+    parentEstimatedContextTokens: messages.reduce((total, message) => total + estimateTokens(message), 0),
     parentMessageBytes: Buffer.byteLength(serialized),
     parentToolResultBytes: visible.filter((message) => message.role === "toolResult").reduce((total, message) => total + Buffer.byteLength(JSON.stringify(message.content)), 0),
     childSentinelVisibleInParent: serialized.includes(sentinel),
