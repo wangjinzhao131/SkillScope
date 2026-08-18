@@ -84,7 +84,9 @@ node_modules/.bin/pi \
 
 ## 已获得的证据
 
-直接针对“父上下文＋结构化返回＋嵌套 Skill”的四条件 Harness 和本地实现已完成，但**尚无该新版 60-trial live 结果**，因此现在还不能声称 SkillScope 已经降低父上下文或提高稳定性。设计、指标与运行门见[父上下文与嵌套 SkillScope 实验](./experiments/parent-context/README.md)。以下访问实验只提供底层边界与 Harness 经验，不能替代这个根本目标的证据。
+直接针对“父上下文＋结构化返回＋嵌套 Skill”的四条件60-trial live矩阵已经完成。Nested相对Inline的父provider context降低84.4%、父message bytes降低83.7%；四组均15/15正确、五个family内三次语义结果均一致，Nested的45个main/leaf Scope全部Runtime-valid并dispose，child Sentinel没有进入父messages。
+
+但这不是“全面胜利”：Nested相对Inline的调用树tokens增加154.4%、延迟增加287.9%；Freeform、Flat、Nested在当前简单任务上也都满分，因此这里只能说稳定性**没有下降**，不能证明结构化返回或嵌套已经**提高**稳定性。当前证据支持继续优化“用总工作量换父上下文”的产品方向，不支持把现实现称为总体效率最优。设计与完整解释见[父上下文与嵌套 SkillScope 实验](./experiments/parent-context/README.md)和[聚合报告](./experiments/parent-context/reports/latest/report.md)。以下访问实验只提供底层边界与 Harness 经验，不能替代这项根本目标证据。
 
 - 真实 `deepseek-v4-flash`：源码宿主完整 E2E 和一次“npm tarball → 全新安装 → 真实父 Pi → 已安装 Extension → 真实子 Session”历史手工链均为 `SUCCESS`。后者的自动重放脚本在 180 秒和 300 秒外层上限下都超时，尚不能称为稳定的一键复现入口。
 - 新 Trace E2E 断言：授权 exact-file 是唯一物理物化/实际读取/模型可见资源；项目根枚举被拒绝；业务路径、诊断正文和 API key 未以明文进入外置 `metadata-only-v1` Trace。仓库中的审核版合成 E2E 摘要另行保留了非敏感 fixture 诊断，不能与 Trace 隐私边界混为一谈。

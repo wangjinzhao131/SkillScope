@@ -1,6 +1,6 @@
 # 父上下文与嵌套 SkillScope 实验预注册 v1
 
-状态：**DESIGN FROZEN / IMPLEMENTED LOCALLY / NO LIVE DATA。** 本文在实现前冻结研究问题和测量口径；嵌套 Runtime、任务语料、Harness 与测试现已落盘，但仍必须与本文一起进入一个 clean commit，才允许创建 live manifest。任何 live 数据出现后不得静默修改任务 truth、主要指标或成功标准。
+状态：**DESIGN FROZEN / LIVE PILOT COMPLETE。** 本文在实现和live数据前冻结研究问题与测量口径。正式矩阵从clean baseline `7392264f7c32bcbb6917659af36a704408885d2c`生成，60/60 trial已完成；数据出现后没有修改任务truth、主要指标或成功标准。结果见[聚合报告](../../experiments/parent-context/reports/latest/report.md)。
 
 日期：2026-08-18（Asia/Shanghai）
 
@@ -142,7 +142,7 @@ main Skill 只看到问题、规则、两个路径和可用 child Skill 名，�
 
 本轮明确不继续设计 ResourceSet、planner、NEED_RESOURCE、目录 Profile 或更广安全攻击语料；已有实现只作为固定基础设施。
 
-## 9. 当前实现进展与剩余门禁
+## 9. 最终运行状态
 
 本地实现已经补齐：
 
@@ -155,4 +155,6 @@ main Skill 只看到问题、规则、两个路径和可用 child Skill 名，�
 - Inline、Freeform、Flat、Nested 四条件 Harness、五个 family、60-job clean-manifest builder、resume runner 与结果 analyzer；
 - 本地 scripted 5×4 smoke，以及真实嵌套 Scope ID、并发/越权拒绝、child transcript projection、Trace 和 dispose 回归。
 
-剩余门禁是：全仓 `npm run verify`、把 outcome-relevant tree 提交为 clean baseline、登录 shell 的真实 provider preflight，然后一次生成并执行全新 60-job manifest。完成之前仍不能声称 SkillScope 已验证其根本目标。
+全部本地门禁和真实四臂preflight通过后，从同一clean baseline生成 `parent-context.v1` manifest。真实 `deepseek-v4-flash` 单writer运行完成60/60：四组Hard Pass均15/15，Nested 15/15形成一个main和两个独立leaf Scope并全部dispose，三个offload条件父Sentinel命中均为0。
+
+Nested相对Inline的父provider context降低84.4%、父message bytes降低83.7%，但调用树tokens增加154.4%、延迟增加287.9%。四组正确率与语义family一致率均为100%，所以本轮支持“独立Scope显著释放父上下文且没有损害任务结果”，但因天花板效应，尚不能证明Runtime结构化返回或嵌套比freeform更稳定，也不能称总体成本优化。

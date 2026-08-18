@@ -94,5 +94,10 @@ test("analyzer applies the preregistered parent-context and stability gates", as
   assert.equal(summary.gates.supported, true);
   assert.equal(summary.blocks.completeBlocks, 15);
   assert.equal(summary.blocks.medianNestedProviderContextReduction, 0.6);
+  assert.equal(summary.blocks.contrasts.nestedToInline.treeTokens, 5 / 3);
+  assert.equal(summary.conditions.INLINE_PARENT.familyConsistencyRate, 1);
+  assert.equal(summary.conditions.EPHEMERAL_FREEFORM.familyConsistencyRate, 1);
+  assert.equal(summary.conditions.SKILLSCOPE_FLAT.familyConsistencyRate, 1);
+  assert.equal(summary.conditions.SKILLSCOPE_NESTED.familyConsistencyRate, 1);
   assert.match(await readFile(join(output, "report.md"), "utf8"), /当前探索性证据支持继续发展/);
 });

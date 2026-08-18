@@ -2,7 +2,7 @@
 
 这是当前直接对应 SkillScope 根本目标的实验 Harness：比较父 Agent 直接工作、自由文本临时 Agent、单层结构化 SkillScope、主 Skill 下两个独立子 SkillScope，观察父上下文占用和端到端稳定性。
 
-状态：**实现与本地 smoke 阶段；尚无 live 结果。** 访问边界、动态补权、ResourceSet 和安全 Profile 不是本实验处理因素。完整设计、停止规则和成功门见[预注册文档](../../docs/research/父上下文与嵌套SkillScope实验预注册_v1.md)。
+状态：**60/60 live trial 已完成，已生成审核报告。** 访问边界、动态补权、ResourceSet 和安全 Profile 不是本实验处理因素。完整设计、停止规则和成功门见[预注册文档](../../docs/research/父上下文与嵌套SkillScope实验预注册_v1.md)，结果见[正式聚合报告](./reports/latest/report.md)。
 
 ## 四个条件
 
@@ -41,8 +41,14 @@ npm run parent-context:analyze
 
 Raw manifest/results 位于 `experiments/parent-context/runs/`，被 Git 忽略，因为它们含隐藏 truth、packet bytes 和模型输出。只提交人工复核后的聚合报告。Runner 是单进程 writer；每个 capability failure 不重跑，provider error 最多按 manifest 冻结规则额外尝试一次并保留 attempt 摘要。
 
+本轮实际使用 clean baseline `7392264f7c32bcbb6917659af36a704408885d2c`，逻辑 manifest hash 为 `sha256:e85075c7a254c82512f6d39fbd82200b282999e325138c9cd984665ad071c893`。60个结果均一次完成，没有 provider/harness 排除。
+
 ## 测量
 
 每个 trial 记录父级 provider context tokens、Pi 估算 context tokens、模型可见 message bytes、tool-result bytes、child sentinel 是否进入父消息、Parent Hard Pass、family 内三次一致性、调用树 tokens/延迟，以及 Scope start/dispose 账本。
 
 父上下文变小不自动等于总成本变小。若 Nested 只是把 tokens 或延迟搬到子 Scope，最终报告必须明确写“上下文换成本”。本 Pilot 只有五个 family，不能当生产 SLA，也不回答 SkillScope 是否优于所有 Subagent 实现。
+
+## 一句话结果
+
+Nested相对Inline把父provider context降低84.4%、父message bytes降低83.7%，四组均15/15正确；但Nested调用树tokens增加154.4%、延迟增加287.9%，而Freeform同样15/15，因此当前证据支持“独立Scope能显著释放父上下文”，尚不支持“结构化/嵌套已经提高稳定性或总体效率”。

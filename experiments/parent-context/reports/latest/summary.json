@@ -1,0 +1,133 @@
+{
+  "manifestHash": "sha256:e85075c7a254c82512f6d39fbd82200b282999e325138c9cd984665ad071c893",
+  "conditions": {
+    "INLINE_PARENT": {
+      "condition": "INLINE_PARENT",
+      "planned": 15,
+      "eligible": 15,
+      "hardPasses": 15,
+      "hardPassRate": 1,
+      "medianParentProviderContextTokens": 7838,
+      "medianParentEstimatedContextTokens": 6963,
+      "medianParentMessageBytes": 30251,
+      "medianParentToolResultBytes": 26750,
+      "medianTreeTokens": 8703,
+      "medianLatencyMs": 11805.885375,
+      "sentinelHits": 15,
+      "lifecyclePasses": 15,
+      "lifecyclePassRate": 1,
+      "familyConsistencyRate": 1,
+      "consistentFamilies": 5,
+      "completeFamilies": 5,
+      "failureCodes": {}
+    },
+    "EPHEMERAL_FREEFORM": {
+      "condition": "EPHEMERAL_FREEFORM",
+      "planned": 15,
+      "eligible": 15,
+      "hardPasses": 15,
+      "hardPassRate": 1,
+      "medianParentProviderContextTokens": 1156,
+      "medianParentEstimatedContextTokens": 433,
+      "medianParentMessageBytes": 3747,
+      "medianParentToolResultBytes": 379,
+      "medianTreeTokens": 10217,
+      "medianLatencyMs": 21534.391042,
+      "sentinelHits": 0,
+      "lifecyclePasses": 15,
+      "lifecyclePassRate": 1,
+      "familyConsistencyRate": 1,
+      "consistentFamilies": 5,
+      "completeFamilies": 5,
+      "failureCodes": {}
+    },
+    "SKILLSCOPE_FLAT": {
+      "condition": "SKILLSCOPE_FLAT",
+      "planned": 15,
+      "eligible": 15,
+      "hardPasses": 15,
+      "hardPassRate": 1,
+      "medianParentProviderContextTokens": 1214,
+      "medianParentEstimatedContextTokens": 497,
+      "medianParentMessageBytes": 4067,
+      "medianParentToolResultBytes": 595,
+      "medianTreeTokens": 12854,
+      "medianLatencyMs": 25284.99425,
+      "sentinelHits": 0,
+      "lifecyclePasses": 15,
+      "lifecyclePassRate": 1,
+      "familyConsistencyRate": 1,
+      "consistentFamilies": 5,
+      "completeFamilies": 5,
+      "failureCodes": {}
+    },
+    "SKILLSCOPE_NESTED": {
+      "condition": "SKILLSCOPE_NESTED",
+      "planned": 15,
+      "eligible": 15,
+      "hardPasses": 15,
+      "hardPassRate": 1,
+      "medianParentProviderContextTokens": 1231,
+      "medianParentEstimatedContextTokens": 515,
+      "medianParentMessageBytes": 4953,
+      "medianParentToolResultBytes": 604,
+      "medianTreeTokens": 22147,
+      "medianLatencyMs": 51046.886375,
+      "sentinelHits": 0,
+      "lifecyclePasses": 15,
+      "lifecyclePassRate": 1,
+      "familyConsistencyRate": 1,
+      "consistentFamilies": 5,
+      "completeFamilies": 5,
+      "failureCodes": {}
+    }
+  },
+  "blocks": {
+    "plannedBlocks": 15,
+    "completeBlocks": 15,
+    "medianNestedToInlineProviderContextRatio": 0.15580306290342993,
+    "medianNestedToInlineMessageByteRatio": 0.16283121835755146,
+    "medianNestedProviderContextReduction": 0.8441969370965701,
+    "medianNestedMessageByteReduction": 0.8371687816424486,
+    "contrasts": {
+      "freeformToInline": {
+        "providerContext": 0.1475054229934924,
+        "messageBytes": 0.12462167825190408,
+        "treeTokens": 1.1719451802372451,
+        "latency": 1.9649127807762194
+      },
+      "flatToFreeform": {
+        "providerContext": 1.0302768166089966,
+        "messageBytes": 1.075563524590164,
+        "treeTokens": 1.2565628964574997,
+        "latency": 1.1389695175109844
+      },
+      "nestedToFlat": {
+        "providerContext": 1.0151133501259446,
+        "messageBytes": 1.2162419623719933,
+        "treeTokens": 1.7300623175830243,
+        "latency": 1.73981285381655
+      },
+      "nestedToInline": {
+        "providerContext": 0.15580306290342993,
+        "messageBytes": 0.16283121835755146,
+        "treeTokens": 2.544136119675688,
+        "latency": 3.8790537859959593
+      }
+    }
+  },
+  "gates": {
+    "supported": true,
+    "checks": {
+      "providerContextReduction30": true,
+      "messageByteReduction30": true,
+      "nestedWithin10ppOfInline": true,
+      "nestedNotBelowFreeform": true,
+      "nestedConsistencyNotBelowFreeform": true,
+      "offloadSentinelZero": true,
+      "nestedLifecycleAllValid": true,
+      "noPolicyFailOpen": true
+    }
+  },
+  "excluded": 0
+}

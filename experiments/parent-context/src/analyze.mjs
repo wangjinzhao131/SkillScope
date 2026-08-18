@@ -75,6 +75,7 @@ function pairedBlocks(manifest, eligible) {
   const complete = [...byBlock.values()].filter((block) => CONDITIONS.every((condition) => block[condition]));
   const nestedInlineRatios = complete.map((block) => ratio(block.SKILLSCOPE_NESTED.parentMetrics?.parentProviderContextTokens, block.INLINE_PARENT.parentMetrics?.parentProviderContextTokens)).filter(Number.isFinite);
   const nestedInlineByteRatios = complete.map((block) => ratio(block.SKILLSCOPE_NESTED.parentMetrics?.parentMessageBytes, block.INLINE_PARENT.parentMetrics?.parentMessageBytes)).filter(Number.isFinite);
+  const pairedRatio = (numerator, denominator, select) => median(complete.map((block) => ratio(select(block[numerator]), select(block[denominator]))).filter(Number.isFinite));
   return {
     plannedBlocks: manifest.familyCount * manifest.repeats,
     completeBlocks: complete.length,
@@ -82,6 +83,21 @@ function pairedBlocks(manifest, eligible) {
     medianNestedToInlineMessageByteRatio: median(nestedInlineByteRatios),
     medianNestedProviderContextReduction: reduction(median(nestedInlineRatios)),
     medianNestedMessageByteReduction: reduction(median(nestedInlineByteRatios)),
+    contrasts: {
+      freeformToInline: contrastRatios(pairedRatio, "EPHEMERAL_FREEFORM", "INLINE_PARENT"),
+      flatToFreeform: contrastRatios(pairedRatio, "SKILLSCOPE_FLAT", "EPHEMERAL_FREEFORM"),
+      nestedToFlat: contrastRatios(pairedRatio, "SKILLSCOPE_NESTED", "SKILLSCOPE_FLAT"),
+      nestedToInline: contrastRatios(pairedRatio, "SKILLSCOPE_NESTED", "INLINE_PARENT"),
+    },
+  };
+}
+
+function contrastRatios(pairedRatio, numerator, denominator) {
+  return {
+    providerContext: pairedRatio(numerator, denominator, (record) => record.parentMetrics?.parentProviderContextTokens),
+    messageBytes: pairedRatio(numerator, denominator, (record) => record.parentMetrics?.parentMessageBytes),
+    treeTokens: pairedRatio(numerator, denominator, (record) => record.usage?.tree?.totalTokens),
+    latency: pairedRatio(numerator, denominator, (record) => record.wallTimeMs),
   };
 }
 
@@ -136,11 +152,34 @@ function renderReport(manifest, records, eligible, excluded, summaries, blocks, 
     `- Nested 相对 Inline 的父 provider context 中位降幅：${formatRate(blocks.medianNestedProviderContextReduction)}`,
     `- Nested 相对 Inline 的父 message bytes 中位降幅：${formatRate(blocks.medianNestedMessageByteReduction)}`,
     "",
+    "## 机制包代价",
+    "",
+    "下面是15个配对块的中位相对变化；正数表示增加，负数表示减少。",
+    "",
+    "| 对比 | 父context | 父message bytes | 调用树tokens | 延迟 |",
+    "| --- | ---: | ---: | ---: | ---: |",
+    contrastRow("Freeform / Inline", blocks.contrasts.freeformToInline),
+    contrastRow("Flat / Freeform", blocks.contrasts.flatToFreeform),
+    contrastRow("Nested / Flat", blocks.contrasts.nestedToFlat),
+    contrastRow("Nested / Inline", blocks.contrasts.nestedToInline),
+    "",
     "## 预定方向门",
     "",
     ...Object.entries(gates.checks).map(([name, passed]) => `- ${passed ? "PASS" : "FAIL"} — ${name}`),
     "",
     `总体：**${gates.supported ? "当前探索性证据支持继续发展该设计" : "当前探索性证据不足以支持完整设计"}**。`,
+    "",
+    "## 直接结论",
+    "",
+    "- **父上下文假设得到支持：** Nested把过程留在三个随用随销的独立Scope中，只把Runtime-valid结果逐层返回；相对Inline，父provider context和父message bytes均减少约84%。",
+    "- **稳定性只证明了“没有下降”，尚未证明“提高”：** 四组Hard Pass和family一致率均为100%，出现天花板效应；因此当前语料不能识别Runtime结构化返回或嵌套是否比freeform更稳定。",
+    "- **独立嵌套机制得到运行证据：** Nested的15个trial全部形成一个main与两个不同child Scope，结果均通过Runtime校验，全部dispose，child Sentinel未进入父messages。",
+    `- **当前实现是上下文换总成本：** Nested相对Inline的调用树tokens增加${formatRatioIncrease(blocks.contrasts.nestedToInline.treeTokens)}，延迟增加${formatRatioIncrease(blocks.contrasts.nestedToInline.latency)}；不能称为总体效率优化。`,
+    `- **结构化和嵌套的增量价值仍待证明：** Flat相对Freeform的调用树tokens增加${formatRatioIncrease(blocks.contrasts.flatToFreeform.treeTokens)}，Nested相对Flat再增加${formatRatioIncrease(blocks.contrasts.nestedToFlat.treeTokens)}，但本轮正确率没有差异。`,
+    "",
+    "## 分析修正",
+    "",
+    "首版分析曾把每个repeat故意变化的memory code也纳入family语义一致性，因而错误报告0%。修正版只比较decision、constraintFact、observationFact；memory code仍由每条Hard Pass独立检查。原始60条结果、上下文、成本和正确率均未改变。",
     "",
     "## 解释边界",
     "",
@@ -174,7 +213,13 @@ function familyConsistencyRate(records) {
     groups.set(record.familyId, values);
   }
   const complete = [...groups.values()].filter((values) => values.length === 3);
-  const consistent = complete.filter((values) => values.every((record) => record.verification?.hardPass === true) && new Set(values.map((record) => JSON.stringify(record.parentResult))).size === 1).length;
+  // memoryCode is deliberately fresh per repeat, so it is a retention check,
+  // not part of the semantic answer whose repeat consistency we estimate.
+  const consistent = complete.filter((values) => values.every((record) => record.verification?.hardPass === true) && new Set(values.map((record) => JSON.stringify({
+    decision: record.parentResult?.decision,
+    constraintFact: record.parentResult?.constraintFact,
+    observationFact: record.parentResult?.observationFact,
+  }))).size === 1).length;
   return { consistent, total: complete.length, rate: rate(consistent, complete.length) };
 }
 
@@ -192,6 +237,9 @@ function ratio(numerator, denominator) { return typeof numerator === "number" &&
 function reduction(ratioValue) { return typeof ratioValue === "number" && Number.isFinite(ratioValue) ? 1 - ratioValue : null; }
 function finiteRate(value) { return typeof value === "number" && Number.isFinite(value); }
 function counts(values) { return Object.fromEntries([...new Set(values)].sort().map((value) => [value, values.filter((item) => item === value).length])); }
+function contrastRow(name, values) { return `| ${name} | ${formatSignedChange(values.providerContext)} | ${formatSignedChange(values.messageBytes)} | ${formatSignedChange(values.treeTokens)} | ${formatSignedChange(values.latency)} |`; }
 function formatRate(value) { return typeof value === "number" && Number.isFinite(value) ? `${(value * 100).toFixed(1)}%` : "NA"; }
+function formatRatioIncrease(ratioValue) { return typeof ratioValue === "number" && Number.isFinite(ratioValue) ? formatRate(ratioValue - 1) : "NA"; }
+function formatSignedChange(ratioValue) { return typeof ratioValue === "number" && Number.isFinite(ratioValue) ? `${ratioValue >= 1 ? "+" : ""}${((ratioValue - 1) * 100).toFixed(1)}%` : "NA"; }
 function formatNumber(value) { return typeof value === "number" && Number.isFinite(value) ? value.toFixed(1) : "NA"; }
 function csvCell(value) { const text = value === undefined || value === null ? "" : String(value); return /[",\n]/u.test(text) ? `"${text.replaceAll('"', '""')}"` : text; }
