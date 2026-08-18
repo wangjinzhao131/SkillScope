@@ -32,3 +32,10 @@ EXPERIMENT_KEY=... \
 ```
 
 `summarize` is offline and may be rerun against the frozen raw files. Generated summaries remain exploratory until their raw job/identity alignment and task-level failures are manually audited.
+
+The post-Pilot [planner output-budget probe](../../../docs/research/Planner输出预算实验预注册_v1.md) is a separate 60-trial mechanism experiment. It calls only the parent planner and crosses root/sharded catalog width with 512/1024/2048 output-token limits:
+
+```bash
+node experiments/access-frontier/entropy-frontier/planner-budget-probe.mjs plan
+EXPERIMENT_KEY=... node experiments/access-frontier/entropy-frontier/planner-budget-probe.mjs run
+```

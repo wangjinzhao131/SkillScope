@@ -7,7 +7,8 @@ import {
 } from "./protocol.mjs";
 import { grantPlannerTools } from "./prompt.mjs";
 
-export async function planInitialGrants({ task, client, seed, temperature = 0, signal }) {
+export async function planInitialGrants({ task, client, seed, temperature = 0, maxTokens = 512, signal }) {
+  if (!Number.isInteger(maxTokens) || maxTokens < 1) throw new Error("grant planner maxTokens must be a positive integer");
   const catalog = normalizeGrants(task.inferredCatalog ?? []);
   const canaryTokens = collectCanaryTokens(task);
   if (catalog.length === 0) {
@@ -21,6 +22,7 @@ export async function planInitialGrants({ task, client, seed, temperature = 0, s
       providerModels: [],
       modelVisibleCanaryHits: [],
       assistantOutputCanaryHits: [],
+      attemptDiagnostics: [],
       repairCount: 0,
     };
   }
@@ -63,6 +65,7 @@ export async function planInitialGrants({ task, client, seed, temperature = 0, s
   const providerRetryEvents = [];
   const modelVisibleCanaryHits = new Set(canaryHits(messages, canaryTokens));
   const assistantOutputCanaryHits = new Set();
+  const attemptDiagnostics = [];
 
   for (let repairCount = 0; repairCount <= 1; repairCount += 1) {
     let completion;
@@ -72,7 +75,7 @@ export async function planInitialGrants({ task, client, seed, temperature = 0, s
         tools,
         toolChoice: { type: "function", function: { name: "select_grants" } },
         temperature,
-        maxTokens: 512,
+        maxTokens,
         seed,
         signal,
       });
@@ -93,6 +96,7 @@ export async function planInitialGrants({ task, client, seed, temperature = 0, s
         repairCount,
         modelVisibleCanaryHits: [...modelVisibleCanaryHits],
         assistantOutputCanaryHits: [...assistantOutputCanaryHits],
+        attemptDiagnostics: [...attemptDiagnostics],
       };
       throw failure;
     }
@@ -103,6 +107,14 @@ export async function planInitialGrants({ task, client, seed, temperature = 0, s
     providerRetryEvents.push(...(completion.retryEvents ?? []));
     for (const hit of canaryHits(completion.message, canaryTokens)) assistantOutputCanaryHits.add(hit);
     const call = completion.message.tool_calls?.find((candidate) => candidate.function?.name === "select_grants");
+    attemptDiagnostics.push({
+      attempt: repairCount + 1,
+      maxTokens,
+      finishReason: completion.finishReason ?? null,
+      toolCallPresent: Boolean(call),
+      argumentType: call ? typeof call.function?.arguments : null,
+      completionTokens: completion.usage?.completionTokens ?? null,
+    });
     const parsed = parseSelection(call?.function?.arguments, catalog.length);
     if (parsed.valid) {
       return {
@@ -120,6 +132,7 @@ export async function planInitialGrants({ task, client, seed, temperature = 0, s
         repairCount,
         modelVisibleCanaryHits: [...modelVisibleCanaryHits],
         assistantOutputCanaryHits: [...assistantOutputCanaryHits],
+        attemptDiagnostics: [...attemptDiagnostics],
       };
     }
     if (repairCount === 0) {
@@ -151,6 +164,7 @@ export async function planInitialGrants({ task, client, seed, temperature = 0, s
         repairCount,
         modelVisibleCanaryHits: [...modelVisibleCanaryHits],
         assistantOutputCanaryHits: [...assistantOutputCanaryHits],
+        attemptDiagnostics: [...attemptDiagnostics],
       };
     }
   }

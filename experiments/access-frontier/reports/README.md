@@ -1,5 +1,7 @@
 # Generated access-frontier reports
 
+Reviewed experiment narratives are kept beside generated machine summaries. The completed high-search-entropy diagnostic is documented in [entropy-frontier-v1/README.md](./entropy-frontier-v1/README.md); its `*-amended-*` files correct reporting denominators without changing frozen raw outcomes.
+
 This directory is reserved for reproducible outputs from `experiments/access-frontier/analysis/analyze.py`. Raw JSONL belongs in `experiments/access-frontier/runs/`; do not place credentials, provider request headers, or unredacted model traces here.
 
 A report directory contains:

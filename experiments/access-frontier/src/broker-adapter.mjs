@@ -181,7 +181,9 @@ export class BrokerAdapter {
       : files
           .filter((file) => this.grants.some((grant) => pathCovered(grant, file.path)))
           .map((file) => normalizePath(file.path));
-    const readPaths = [...new Set(actualReadSet.map(normalizePath))];
+    const projectFilePaths = new Set(files.map((file) => normalizePath(file.path)));
+    const readPaths = [...new Set(actualReadSet.map(normalizePath))]
+      .filter((path) => projectFilePaths.has(path));
     return {
       grantFiles: grantedPaths.length,
       grantBytes: sumBytes(files, grantedPaths),

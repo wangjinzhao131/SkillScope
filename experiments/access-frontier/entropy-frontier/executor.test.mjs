@@ -11,6 +11,7 @@ import {
 } from "./executor.mjs";
 import { captureImplementationIdentity } from "../src/implementation-identity.mjs";
 import { stableStringify } from "../src/protocol.mjs";
+import { BrokerAdapter } from "../src/broker-adapter.mjs";
 
 test("five high-entropy families satisfy Schema 2 in root and sharded forms", async () => {
   const suite = await loadEntropySuite();
@@ -92,9 +93,28 @@ test("summary keeps exclusions out and reports the preregistered paired directio
   assert.equal(summary.cells.find((cell) => cell.cellId === "ROOT_HANDLE_24").hardPassRate, 1);
   assert.equal(summary.cells.find((cell) => cell.cellId === "SHARDED_ALL_24").hardPassRate, 0);
   assert.equal(summary.cells.find((cell) => cell.cellId === "SHARDED_PLANNER_24").excluded, 1);
+  assert.equal(summary.cells.find((cell) => cell.cellId === "SHARDED_ALL_24").plannerObservedCount, 0);
   assert.equal(summary.contrasts.find((contrast) => contrast.id === "root_vs_sharded_24").hardPassDifference, 1);
   assert.equal(summary.contrasts.find((contrast) => contrast.id === "budget_40_vs_24").meanToolCallDifference, -22);
   assert.match(renderEntropyReport(summary), /Exploratory high-entropy interface diagnostic/);
+});
+
+test("recursive search surface counts project files rather than directory audit paths", async () => {
+  const suite = await loadEntropySuite();
+  const task = buildEntropyTasks(suite, { catalogMode: "root" })[0];
+  const adapter = await BrokerAdapter.create({
+    task,
+    condition: "BOUNDED_INFERRED",
+    declaredGrants: task.inferredCatalog,
+    grants: task.inferredCatalog,
+  });
+  const listed = await adapter.invoke("scope_list", { path: "corpus", recursive: true, maxResults: 100 });
+  assert.equal(listed.ok, true);
+  const result = await adapter.invoke("scope_search", { path: "corpus", query: "r-830", maxResults: 20 });
+  assert.equal(result.ok, true);
+  const access = adapter.snapshot();
+  assert.ok(access.actualReadSet.some((path) => path === "corpus/shard-01"));
+  assert.equal(adapter.surface(access.actualReadSet).actualReadFiles, 16);
 });
 
 function fakeResult(job, definition, { hardPass, toolCalls, index }) {
@@ -109,6 +129,7 @@ function fakeResult(job, definition, { hardPass, toolCalls, index }) {
     usage: { totalTokens: hardPass ? 1_000 : 2_000 },
     durationMs: hardPass ? 1_000 : 2_000,
     surface: { grantFiles: selected.length, actualReadFiles: hardPass ? 2 : 16 },
+    access: { actualReadSet: hardPass ? job.task.requiredEvidence : job.task.virtualProject.files.filter((file) => file.path.startsWith("corpus/")).map((file) => file.path) },
     grants: { initial: selected },
     grantPlanning: definition.plannerMode === "oracle" ? null : {
       source: definition.plannerMode === "model" ? "model_planner" : "manifest_override",

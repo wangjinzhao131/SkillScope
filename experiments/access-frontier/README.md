@@ -28,9 +28,9 @@ The separate forced-undergrant suite completed four jobs. Both no-expansion cont
 
 See the [reviewed Pilot summary](./reports/schema2-pilot-v1/README.md) and the post-freeze [amended analysis](./reports/schema2-pilot-v1-amended-20260818/report.md). The original frozen report is retained for provenance but contains a known error that rendered zero natural requests as 0% recovery; do not cite that recovery line. Seven related synthetic families and one repeat are insufficient for a formal Profile ranking, non-inferiority claim, external-validity claim or architecture decision.
 
-## Next pre-data diagnostic: high search entropy
+## Completed follow-up diagnostic: high search entropy
 
-The follow-up [entropy-frontier suite](./entropy-frontier/README.md) freezes five new semantic families and five cells before live data: exact-file Oracle, all-shard access at 24 and 40 tool calls, one recursive root search handle at 24 calls, and the model planner over opaque shards. Its purpose is to separate the previous failure's planner, catalog topology, and tool-budget components. The registered design is [高搜索熵访问实验预注册 v1](../../docs/research/高搜索熵访问实验预注册_v1.md). Until a clean manifest and real results exist, these are hypotheses and local contract evidence only.
+The follow-up [entropy-frontier suite](./entropy-frontier/README.md) ran five new semantic families × two repeats across exact-file Oracle, all-shard access at 24 and 40 tool calls, one recursive root search handle, and the model planner over opaque shards. Oracle/Root/Sharded-24/Sharded-40/Planner Hard Pass were respectively 10/10, 9/10, 0/10, 7/10, and 0/10; Policy was 50/50 and Canary visibility/exfiltration 0/50. Root and Sharded-all exposed/read the same 16 files, so the +0.90 paired Hard-Pass difference supports separating authorization sets from cross-set navigation. The planner cell exhausted its 512-token response budget without a tool call on all trials, motivating a separately preregistered budget probe. See the [reviewed report](./reports/entropy-frontier-v1/README.md) and [高搜索熵访问实验预注册 v1](../../docs/research/高搜索熵访问实验预注册_v1.md).
 
 ## Commands
 

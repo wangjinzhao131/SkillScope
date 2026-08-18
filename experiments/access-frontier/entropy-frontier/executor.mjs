@@ -203,6 +203,9 @@ export function summarizeEntropyFrontier({ descriptor, jobsByCell, resultsByCell
         ?? result?.grants?.initial
         ?? job.initialGrantOverride
         ?? (cell.plannerMode === "oracle" ? job.task.oracleGrants : []);
+      const projectFilePaths = new Set(job.task.virtualProject.files.map((file) => file.path));
+      const actualReadPaths = result?.access?.actualReadSet ?? [];
+      const actualReadFileCount = new Set(actualReadPaths.filter((path) => projectFilePaths.has(path))).size;
       rows.push({
         cellId: cell.id,
         taskId: job.taskId,
@@ -223,7 +226,8 @@ export function summarizeEntropyFrontier({ descriptor, jobsByCell, resultsByCell
         totalTokens: eligible ? numberOrNull(result?.usage?.totalTokens) : null,
         durationMs: eligible ? numberOrNull(result?.durationMs) : null,
         grantSurfaceCount: eligible ? numberOrNull(result?.surface?.grantFiles) : null,
-        readSurfaceCount: eligible ? numberOrNull(result?.surface?.actualReadFiles) : null,
+        readSurfaceCount: eligible ? actualReadFileCount : null,
+        rawActualReadPathCount: eligible ? numberOrNull(result?.surface?.actualReadFiles) : null,
         plannerSource: result?.grantPlanning?.source ?? (cell.plannerMode === "oracle" ? "oracle" : null),
         plannerRepairCount: numberOrNull(result?.grantPlanning?.repairCount),
         plannerSelectedCount: Array.isArray(selectedGrants) ? selectedGrants.length : null,
@@ -237,6 +241,7 @@ export function summarizeEntropyFrontier({ descriptor, jobsByCell, resultsByCell
   const contrasts = descriptor.contrasts.map((contrast) => summarizeContrast(contrast, rows));
   return {
     schemaVersion: "1.0",
+    reportingSchemaVersion: "1.1",
     entropyProtocolVersion: descriptor.entropyProtocolVersion,
     runnerProtocolVersion: descriptor.runnerProtocolVersion,
     suiteId: descriptor.suiteId,
@@ -252,6 +257,7 @@ export function summarizeEntropyFrontier({ descriptor, jobsByCell, resultsByCell
     contrasts,
     rows,
     interpretationGuard: descriptor.interpretationGuard,
+    reportingNote: "Post-run reporting semantics count read surface by intersecting access.actualReadSet with virtual-project file paths; raw v1.3 surface.actualReadFiles also counted directory paths reached during recursive search. Manifest overrides are not model-planner observations.",
   };
 }
 
@@ -266,13 +272,15 @@ export function renderEntropyReport(summary) {
     "",
     `> ${summary.interpretationGuard}`,
     "",
+    `Reporting amendment: ${summary.reportingNote}`,
+    "",
     "## Cell summary",
     "",
-    "| Cell | Eligible | Hard Pass | Policy failures | Canary visible / exfil | Median tools | Median tokens | Median duration ms | Planner fallback | Planner coverage |",
-    "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    "| Cell | Eligible | Hard Pass | Errors | Policy failures | Canary visible / exfil | Median tools | Median tokens | Median duration ms | Median grant/read files | Planner fallback | Planner coverage |",
+    "| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
   ];
   for (const cell of summary.cells) {
-    lines.push(`| ${cell.cellId} | ${cell.eligible}/${cell.planned} | ${cell.hardPassSuccesses}/${cell.hardPassN} | ${cell.policyFailureCount} | ${cell.canaryVisibleCount}/${cell.canaryExfiltrationCount} | ${format(cell.medianToolCalls)} | ${format(cell.medianTotalTokens)} | ${format(cell.medianDurationMs)} | ${cell.plannerFallbackCount}/${cell.plannerObservedCount} | ${cell.selectedCoverageCount}/${cell.selectedCoverageN} |`);
+    lines.push(`| ${cell.cellId} | ${cell.eligible}/${cell.planned} | ${cell.hardPassSuccesses}/${cell.hardPassN} | ${formatErrors(cell.errorCounts)} | ${cell.policyFailureCount} | ${cell.canaryVisibleCount}/${cell.eligible} / ${cell.canaryExfiltrationCount}/${cell.eligible} | ${format(cell.medianToolCalls)} | ${format(cell.medianTotalTokens)} | ${format(cell.medianDurationMs)} | ${format(cell.medianGrantSurfaceCount)} / ${format(cell.medianReadSurfaceCount)} | ${cell.plannerFallbackCount}/${cell.plannerObservedCount} | ${cell.selectedCoverageCount}/${cell.selectedCoverageN} |`);
   }
   lines.push("", "## Paired contrasts", "", "Positive Hard Pass differences favor treatment; negative resource differences mean treatment used less.", "", "| Contrast | Eligible pairs | Hard Pass difference | Mean tool-call difference | Mean token difference | Mean duration difference ms |", "| --- | ---: | ---: | ---: | ---: | ---: |");
   for (const contrast of summary.contrasts) {
@@ -500,7 +508,7 @@ async function entropySourceHash() {
 
 function aggregateCell(cell, rows) {
   const eligible = rows.filter((row) => row.eligible);
-  const plannerRows = eligible.filter((row) => row.plannerSource !== null && row.plannerSource !== "oracle");
+  const plannerRows = eligible.filter((row) => new Set(["model_planner", "planner_fallback_all", "planner_error"]).has(row.plannerSource));
   const coverageRows = eligible.filter((row) => row.selectedCoversRequired !== null);
   return {
     cellId: cell.id,
@@ -524,6 +532,7 @@ function aggregateCell(cell, rows) {
     plannerRepairCount: plannerRows.filter((row) => (row.plannerRepairCount ?? 0) > 0).length,
     selectedCoverageCount: coverageRows.filter((row) => row.selectedCoversRequired).length,
     selectedCoverageN: coverageRows.length,
+    errorCounts: countBy(eligible.filter((row) => row.errorCode !== null).map((row) => row.errorCode)),
   };
 }
 
@@ -602,6 +611,17 @@ function rate(numerator, denominator) {
 function format(value) {
   if (value === null || value === undefined) return "NA";
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
+function countBy(values) {
+  const counts = {};
+  for (const value of values) counts[value] = (counts[value] ?? 0) + 1;
+  return counts;
+}
+
+function formatErrors(counts) {
+  const entries = Object.entries(counts ?? {}).sort(([left], [right]) => left.localeCompare(right));
+  return entries.length === 0 ? "none" : entries.map(([code, count]) => `${code}=${count}`).join("; ");
 }
 
 function validateRunId(value) {
