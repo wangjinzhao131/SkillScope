@@ -1,3 +1,4 @@
 experiments/access-frontier/reports/**/*.csv whitespace=cr-at-eol
 experiments/access-frontier/reports/entropy-frontier-v1*-report.md whitespace=-blank-at-eol,-blank-at-eof
 experiments/access-frontier/reports/planner-budget-v1-report.md whitespace=-blank-at-eof
+experiments/access-frontier/reports/resource-set-holdout-v1-report.md whitespace=-blank-at-eof

@@ -1,6 +1,6 @@
 # Generated access-frontier reports
 
-Reviewed experiment narratives are kept beside generated machine summaries. The completed high-search-entropy diagnostic is documented in [entropy-frontier-v1/README.md](./entropy-frontier-v1/README.md); its `*-amended-*` files correct reporting denominators without changing frozen raw outcomes. The subsequent planner-only mechanism result is in [planner-budget-v1/README.md](./planner-budget-v1/README.md).
+Reviewed experiment narratives are kept beside generated machine summaries. The completed high-search-entropy diagnostic is documented in [entropy-frontier-v1/README.md](./entropy-frontier-v1/README.md); its `*-amended-*` files correct reporting denominators without changing frozen raw outcomes. The subsequent planner-only mechanism result is in [planner-budget-v1/README.md](./planner-budget-v1/README.md). The 48-job real-repository snapshot and experimental exact-file ResourceSet result is in [resource-set-holdout-v1/README.md](./resource-set-holdout-v1/README.md), including its completion-order measurement sensitivity.
 
 This directory is reserved for reproducible outputs from `experiments/access-frontier/analysis/analyze.py`. Raw JSONL belongs in `experiments/access-frontier/runs/`; do not place credentials, provider request headers, or unredacted model traces here.
 

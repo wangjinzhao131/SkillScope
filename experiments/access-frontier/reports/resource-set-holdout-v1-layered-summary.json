@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "reviewed-resource-set-layering.v1",
+  "experimentVersion": "resource-set-holdout.v1",
+  "planHash": "sha256:9b8c8ce821d1cb0658f29b00450808495392fc4d0771fdafe3e133ced4482102",
+  "derivation": {
+    "answerFactsCorrect": "verification.answerCodeMatches === true && verification.factsMatch === true",
+    "hardPass": "frozen verification.hardPass === true",
+    "sensitivityExclusion": "taskId !== af-rs-completion-order",
+    "rawOutcomesChanged": false
+  },
+  "inputResultFileSha256": {
+    "ORACLE_FILES_24": "31169612ced5958c663ab720337c339bd8dde62f5ed54340b6c2afc74a522e48",
+    "EXACT_FILES_24": "be9236c632d8381bb36aac38d4f5c667cc438703fa16feab998d95161ca3315b",
+    "RESOURCE_SET_24": "cf2d2a08617b770d6a3132340ce79ba3c3585b9cd2d1dac18b739598d3fb5584",
+    "ROOT_DIRECTORY_24": "bb1953191a9a4befd1d5bc77b820680f7d80ac3352d230178c353638a52ae9de"
+  },
+  "allFrozenTrials": {
+    "ORACLE_FILES_24": {"n": 12, "submitted": 12, "answerFactsCorrect": 10, "hardPass": 9},
+    "EXACT_FILES_24": {"n": 12, "submitted": 7, "answerFactsCorrect": 5, "hardPass": 3},
+    "RESOURCE_SET_24": {"n": 12, "submitted": 10, "answerFactsCorrect": 9, "hardPass": 8},
+    "ROOT_DIRECTORY_24": {"n": 12, "submitted": 9, "answerFactsCorrect": 7, "hardPass": 6}
+  },
+  "withoutAmbiguousCompletionOrderFamily": {
+    "ORACLE_FILES_24": {"n": 10, "submitted": 10, "answerFactsCorrect": 10, "hardPass": 9},
+    "EXACT_FILES_24": {"n": 10, "submitted": 5, "answerFactsCorrect": 5, "hardPass": 3},
+    "RESOURCE_SET_24": {"n": 10, "submitted": 9, "answerFactsCorrect": 9, "hardPass": 8},
+    "ROOT_DIRECTORY_24": {"n": 10, "submitted": 9, "answerFactsCorrect": 7, "hardPass": 6}
+  },
+  "measurementIssue": {
+    "taskId": "af-rs-completion-order",
+    "classification": "AMBIGUOUS_PUBLIC_FACT",
+    "description": "duplicatePolicy conflates retaining the first accepted payload with the fatal whole-invocation outcome after a duplicate completion",
+    "submittedTrials": 5,
+    "submittedWithExpectedAnswerCode": 5,
+    "submittedWithFirstWinsSuccessFact": 5
+  },
+  "interpretationGuard": "Post-run reviewed aggregation only. The frozen truth and raw scores are unchanged; the sensitivity slice is descriptive and was not preregistered."
+}
