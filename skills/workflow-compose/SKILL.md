@@ -14,13 +14,23 @@ Follow `compositionMode` exactly:
 - `PARALLEL_JOIN`: issue both calls in one tool batch; neither input has
   `upstream`.
 - `CONSTRAINT_FIRST`: call constraint alone; after seeing its typed result, call
-  observation with that result copied into `input.upstream`.
+  observation with only the four business fields from that result copied into
+  `input.upstream`.
 - `OBSERVATION_FIRST`: the reverse.
 - `ADAPTIVE_ORDER`: infer from `routingCue` which role can be resolved without
   the other; call it first, then pass its typed result to the other call.
 
 Each child input has only `question`, `role`, `path`, and optional `upstream`.
-Do not pass the decision rule, routing cue, other path, or invented fields.
+When present, `upstream` has exactly this shape and no additional keys:
+
+```json
+{"role":"constraint","resolution":"RESOLVED","key":"<exact key>","value":"<exact value>"}
+```
+
+or the same four fields with role `observation`. Never copy `upstreamPassed`,
+`scopeId`, status, summary, evidence, warnings, errors, or any Runtime-owned
+field into `input.upstream`. Do not pass the decision rule, routing cue, other
+path, or invented fields.
 
 After both results are visible, apply `decisionRule` exactly. If either result is
 not `SUCCESS` or its data is not `RESOLVED`, return `ABSTAIN` and use `UNKNOWN`

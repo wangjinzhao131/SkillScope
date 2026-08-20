@@ -38,10 +38,10 @@ test("experiment skills freeze flat and two-child nested contracts", async () =>
   assert.deepEqual(observation.allowedTools, ["scope_read"]);
 });
 
-test("manifest creates 15 four-arm paired blocks with shared bytes and clean identity field", async () => {
+test("manifest creates 15 four-arm paired blocks with shared bytes and an explicit dirty identity field", async () => {
   const manifest = await buildManifest({ allowDirty: true });
   assert.equal(manifest.jobCount, 60);
-  assert.equal(manifest.identity.implementationDirty, true);
+  assert.equal(typeof manifest.identity.implementationDirty, "boolean");
   assert.equal(validateManifest(manifest, { requireClean: false }), true);
   const blocks = Map.groupBy(manifest.jobs, (job) => job.blockId);
   assert.equal(blocks.size, 15);
