@@ -1,6 +1,6 @@
 # SkillScope Routing Authority Experiment
 
-状态：**设计与本地Harness已实现，全仓`npm run verify`通过；尚未调用本实验的live任务API。**
+状态：**真实两臂工程preflight通过；尚未生成或运行36-trial正式Pilot。**
 
 本实验固定同一main Skill、同一原子Skill、两次child Scope与Runtime自动child-evidence binding，只比较模型根据routing cue选顺序和工作流声明依赖后由Runtime侧给出顺序。完整设计见[预注册](../../docs/research/SkillScope路由权责实验预注册_v1.md)。
 
