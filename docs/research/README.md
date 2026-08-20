@@ -11,6 +11,7 @@
 | [ResourceSet真实仓库快照实验预注册_v1.md](./ResourceSet真实仓库快照实验预注册_v1.md) | 已完成的48-job仓库内snapshot设计；比较exact files、聚合search handle、directory root与Oracle |
 | [父上下文与嵌套SkillScope实验预注册_v1.md](./父上下文与嵌套SkillScope实验预注册_v1.md) | 当前主线：随用随销的主/子Scope、Runtime结构化返回、父上下文占用与端到端稳定性的四条件直接实验 |
 | [父上下文与嵌套SkillScope实验报告](../../experiments/parent-context/reports/latest/report.md) | 60-trial live结果：父上下文显著下降、正确率持平、当前嵌套实现以更多调用树token和延迟换取上下文隔离 |
+| [SkillScope组合拓扑实验预注册_v1.md](./SkillScope组合拓扑实验预注册_v1.md) | 当前延伸主线：固定同一main/原子Skill和调用数，只改变并行、两个串行方向与自适应typed information flow |
 | [Schema 2 Pilot v1 人工复核](../../experiments/access-frontier/reports/schema2-pilot-v1/README.md) | 70-job 五条件结果、forced-undergrant 机制结果、artifact hashes、失败审阅与严格推断边界 |
 | [High-search-entropy Pilot 人工复核](../../experiments/access-frontier/reports/entropy-frontier-v1/README.md) | 50-job 父搜索句柄、分片导航、调用预算与 planner 结果；含 reporting amendment |
 | [Planner output-budget probe 人工复核](../../experiments/access-frontier/reports/planner-budget-v1/README.md) | 60-trial planner-only 结果；区分 forced-tool 协议完成、catalog 宽度、预算与实际选择性 |

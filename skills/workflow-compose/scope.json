@@ -1,0 +1,49 @@
+{
+  "name": "workflow-compose",
+  "version": "1.0.0",
+  "description": "Run the same two atomic Skill calls under one frozen composition topology.",
+  "promptFile": "SKILL.md",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "question": { "type": "string", "minLength": 1, "maxLength": 2000 },
+      "routingCue": { "type": "string", "minLength": 1, "maxLength": 1000 },
+      "decisionRule": { "type": "string", "minLength": 1, "maxLength": 2000 },
+      "compositionMode": { "type": "string", "enum": ["PARALLEL_JOIN", "CONSTRAINT_FIRST", "OBSERVATION_FIRST", "ADAPTIVE_ORDER"] },
+      "constraintPath": { "type": "string", "minLength": 1, "maxLength": 512 },
+      "observationPath": { "type": "string", "minLength": 1, "maxLength": 512 }
+    },
+    "required": ["question", "routingCue", "decisionRule", "compositionMode", "constraintPath", "observationPath"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "decision": { "type": "string", "enum": ["ALLOW", "BLOCK", "ABSTAIN"] },
+      "constraintFact": { "type": "string", "minLength": 1, "maxLength": 256 },
+      "observationFact": { "type": "string", "minLength": 1, "maxLength": 256 },
+      "observedFirstRole": { "type": "string", "enum": ["constraint", "observation", "parallel"] },
+      "upstreamPassedToSecond": { "type": "boolean" }
+    },
+    "required": ["decision", "constraintFact", "observationFact", "observedFirstRole", "upstreamPassedToSecond"],
+    "additionalProperties": false
+  },
+  "allowedTools": [],
+  "resourcePolicy": {
+    "defaultAccessMode": "BOUNDED",
+    "allowedAccessModes": ["BOUNDED"],
+    "allowedOperations": ["read"]
+  },
+  "delegationPolicy": {
+    "allowedSkills": ["inspect-contextual-evidence"],
+    "maxChildScopes": 2,
+    "maxConcurrency": 2
+  },
+  "budget": {
+    "maxTurns": 8,
+    "maxToolCalls": 4,
+    "timeoutMs": 240000,
+    "maxPromptBytes": 131072,
+    "maxResultBytes": 8192
+  }
+}

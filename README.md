@@ -119,6 +119,7 @@ node_modules/.bin/pi \
 - [安全不变量验证](./docs/research/安全不变量验证.md)
 - [access-frontier Harness](./experiments/access-frontier/README.md)
 - [父上下文与嵌套 SkillScope 实验](./experiments/parent-context/README.md)
+- [同一 Skill 的组合拓扑实验](./experiments/composition-topology/README.md)
 - [Pi E2E 复现](./experiments/pi-e2e/README.md)
 
 原始 live manifests/results 默认被 Git 忽略，因为它们含隐藏真值和未审阅模型输出；仓库只提交审核后的聚合报告、hash 和脱敏 E2E 摘要。

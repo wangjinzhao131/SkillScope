@@ -1,0 +1,57 @@
+{
+  "name": "inspect-contextual-evidence",
+  "version": "1.0.0",
+  "description": "Resolve one independent or upstream-keyed evidence packet.",
+  "promptFile": "SKILL.md",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "question": { "type": "string", "minLength": 1, "maxLength": 2000 },
+      "role": { "type": "string", "enum": ["constraint", "observation"] },
+      "path": { "type": "string", "minLength": 1, "maxLength": 512 },
+      "upstream": {
+        "type": "object",
+        "properties": {
+          "role": { "type": "string", "enum": ["constraint", "observation"] },
+          "resolution": { "type": "string", "enum": ["RESOLVED", "AMBIGUOUS"] },
+          "key": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "value": { "type": "string", "minLength": 1, "maxLength": 256 }
+        },
+        "required": ["role", "resolution", "key", "value"],
+        "additionalProperties": false
+      }
+    },
+    "required": ["question", "role", "path"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "role": { "type": "string", "enum": ["constraint", "observation"] },
+      "resolution": { "type": "string", "enum": ["RESOLVED", "AMBIGUOUS"] },
+      "key": { "type": "string", "minLength": 1, "maxLength": 128 },
+      "value": { "type": "string", "minLength": 1, "maxLength": 256 },
+      "upstreamPassed": { "type": "boolean" }
+    },
+    "required": ["role", "resolution", "key", "value", "upstreamPassed"],
+    "additionalProperties": false
+  },
+  "allowedTools": ["scope_read"],
+  "resourcePolicy": {
+    "defaultAccessMode": "BOUNDED",
+    "allowedAccessModes": ["BOUNDED"],
+    "allowedOperations": ["read"]
+  },
+  "delegationPolicy": {
+    "allowedSkills": [],
+    "maxChildScopes": 0,
+    "maxConcurrency": 1
+  },
+  "budget": {
+    "maxTurns": 6,
+    "maxToolCalls": 6,
+    "timeoutMs": 120000,
+    "maxPromptBytes": 131072,
+    "maxResultBytes": 8192
+  }
+}

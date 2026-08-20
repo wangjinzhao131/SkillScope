@@ -1,0 +1,149 @@
+{
+  "schemaVersion": "composition-topology.tasks.v1",
+  "families": [
+    {
+      "id": "rollout-lane",
+      "dependencyDirection": "constraint-first",
+      "question": "May the selected rollout lane proceed?",
+      "routingCue": "The constraint packet identifies the active rollout lane; that key selects the relevant row in the observation packet.",
+      "decisionRule": "Return ALLOW only when constraintFact is exactly gate_enabled and observationFact is exactly health_green; otherwise return BLOCK.",
+      "expectedDecision": "ALLOW",
+      "constraintFact": "gate_enabled",
+      "observationFact": "health_green",
+      "constraintPacket": {
+        "mode": "INDEPENDENT",
+        "primaryKey": "canary",
+        "primaryValue": "gate_enabled"
+      },
+      "observationPacket": {
+        "mode": "REQUIRES_UPSTREAM",
+        "requiredUpstreamRole": "constraint",
+        "entries": {
+          "stable": "health_red",
+          "canary": "health_green",
+          "legacy": "health_yellow",
+          "preview": "health_unknown",
+          "dormant": "health_red"
+        }
+      }
+    },
+    {
+      "id": "retention-tier",
+      "dependencyDirection": "constraint-first",
+      "question": "May data deletion run for the selected retention tier?",
+      "routingCue": "The constraint packet names the active retention tier; that key selects the relevant archive state in the observation packet.",
+      "decisionRule": "Return ALLOW only when constraintFact is exactly archive_required and observationFact is exactly archive_ready; otherwise return BLOCK.",
+      "expectedDecision": "BLOCK",
+      "constraintFact": "archive_required",
+      "observationFact": "archive_missing",
+      "constraintPacket": {
+        "mode": "INDEPENDENT",
+        "primaryKey": "cold",
+        "primaryValue": "archive_required"
+      },
+      "observationPacket": {
+        "mode": "REQUIRES_UPSTREAM",
+        "requiredUpstreamRole": "constraint",
+        "entries": {
+          "hot": "archive_ready",
+          "warm": "archive_ready",
+          "cold": "archive_missing",
+          "frozen": "archive_ready",
+          "legal_hold": "archive_blocked"
+        }
+      }
+    },
+    {
+      "id": "client-cohort",
+      "dependencyDirection": "observation-first",
+      "question": "May the active client cohort receive the migration?",
+      "routingCue": "The observation packet identifies the active client cohort; that key selects the applicable compatibility rule in the constraint packet.",
+      "decisionRule": "Return ALLOW only when constraintFact is exactly minimum_3_0 and observationFact is exactly cohort_active; otherwise return BLOCK.",
+      "expectedDecision": "ALLOW",
+      "constraintFact": "minimum_3_0",
+      "observationFact": "cohort_active",
+      "constraintPacket": {
+        "mode": "REQUIRES_UPSTREAM",
+        "requiredUpstreamRole": "observation",
+        "entries": {
+          "web_v2": "minimum_2_4",
+          "mobile_v3": "minimum_3_0",
+          "desktop_v1": "minimum_1_8",
+          "api_v4": "minimum_4_0",
+          "legacy": "minimum_1_0"
+        }
+      },
+      "observationPacket": {
+        "mode": "INDEPENDENT",
+        "primaryKey": "mobile_v3",
+        "primaryValue": "cohort_active"
+      }
+    },
+    {
+      "id": "replica-region",
+      "dependencyDirection": "observation-first",
+      "question": "May maintenance begin for the active replica region?",
+      "routingCue": "The observation packet names the active replica region; that key selects its required quorum in the constraint packet.",
+      "decisionRule": "Return ALLOW only when constraintFact is exactly required_3 and observationFact is exactly healthy_3; otherwise return BLOCK.",
+      "expectedDecision": "BLOCK",
+      "constraintFact": "required_3",
+      "observationFact": "healthy_2",
+      "constraintPacket": {
+        "mode": "REQUIRES_UPSTREAM",
+        "requiredUpstreamRole": "observation",
+        "entries": {
+          "west": "required_3",
+          "east": "required_2",
+          "central": "required_2",
+          "north": "required_1",
+          "south": "required_2"
+        }
+      },
+      "observationPacket": {
+        "mode": "INDEPENDENT",
+        "primaryKey": "west",
+        "primaryValue": "healthy_2"
+      }
+    },
+    {
+      "id": "independent-feature",
+      "dependencyDirection": "independent",
+      "question": "May the independent feature rollout proceed?",
+      "routingCue": "The two packets are independently authoritative; neither packet selects a row in the other.",
+      "decisionRule": "Return ALLOW only when constraintFact is exactly gate_enabled and observationFact is exactly health_green; otherwise return BLOCK.",
+      "expectedDecision": "ALLOW",
+      "constraintFact": "gate_enabled",
+      "observationFact": "health_green",
+      "constraintPacket": {
+        "mode": "INDEPENDENT",
+        "primaryKey": "global",
+        "primaryValue": "gate_enabled"
+      },
+      "observationPacket": {
+        "mode": "INDEPENDENT",
+        "primaryKey": "production",
+        "primaryValue": "health_green"
+      }
+    },
+    {
+      "id": "independent-budget",
+      "dependencyDirection": "independent",
+      "question": "May the independent error-budget change proceed?",
+      "routingCue": "The two packets are independently authoritative; neither packet selects a row in the other.",
+      "decisionRule": "Return ALLOW only when constraintFact is exactly remaining_12 and observationFact is exactly burn_7; otherwise return BLOCK.",
+      "expectedDecision": "BLOCK",
+      "constraintFact": "remaining_12",
+      "observationFact": "burn_14",
+      "constraintPacket": {
+        "mode": "INDEPENDENT",
+        "primaryKey": "remaining",
+        "primaryValue": "remaining_12"
+      },
+      "observationPacket": {
+        "mode": "INDEPENDENT",
+        "primaryKey": "forecast",
+        "primaryValue": "burn_14"
+      }
+    }
+  ]
+}

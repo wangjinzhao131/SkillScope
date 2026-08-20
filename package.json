@@ -21,10 +21,11 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run test:core && npm run test:pi && npm run test:parent-context && npm run test:fixtures && npm run test:experiment && npm run test:mechanism && npm run test:entropy && npm run test:resource-set && npm run test:analysis && npm run test:plugin-audit && npm run test:security",
+    "test": "npm run test:core && npm run test:pi && npm run test:parent-context && npm run test:composition && npm run test:fixtures && npm run test:experiment && npm run test:mechanism && npm run test:entropy && npm run test:resource-set && npm run test:analysis && npm run test:plugin-audit && npm run test:security",
     "test:core": "node --test tests/core/**/*.test.js",
     "test:pi": "node --test tests/pi/**/*.test.js",
     "test:parent-context": "node --test experiments/parent-context/src/*.test.mjs && node experiments/parent-context/src/cli.mjs --smoke",
+    "test:composition": "node --test experiments/composition-topology/src/*.test.mjs && node experiments/composition-topology/src/cli.mjs --smoke",
     "test:fixtures": "node --test experiments/access-frontier/tasks/*.test.mjs && node experiments/access-frontier/tasks/lint.mjs",
     "test:experiment": "node --test experiments/access-frontier/src/runner.test.mjs tests/experiment-audit/*.test.mjs",
     "test:mechanism": "node --test experiments/access-frontier/mechanism-suites/*.test.mjs && node experiments/access-frontier/mechanism-suites/lint.mjs && node experiments/access-frontier/mechanism-suites/executor.mjs --smoke",
@@ -41,7 +42,12 @@
     "parent-context:preflight": "node experiments/parent-context/src/cli.mjs --preflight",
     "parent-context:plan": "node experiments/parent-context/src/cli.mjs --plan experiments/parent-context/runs/manifest.json",
     "parent-context:run": "node experiments/parent-context/src/cli.mjs --run --manifest experiments/parent-context/runs/manifest.json --results experiments/parent-context/runs/results.jsonl --concurrency 1",
-    "parent-context:analyze": "node experiments/parent-context/src/cli.mjs --analyze --manifest experiments/parent-context/runs/manifest.json --results experiments/parent-context/runs/results.jsonl --output experiments/parent-context/reports/latest"
+    "parent-context:analyze": "node experiments/parent-context/src/cli.mjs --analyze --manifest experiments/parent-context/runs/manifest.json --results experiments/parent-context/runs/results.jsonl --output experiments/parent-context/reports/latest",
+    "composition:smoke": "node experiments/composition-topology/src/cli.mjs --smoke",
+    "composition:preflight": "node experiments/composition-topology/src/cli.mjs --preflight",
+    "composition:plan": "node experiments/composition-topology/src/cli.mjs --plan experiments/composition-topology/runs/manifest.json",
+    "composition:run": "node experiments/composition-topology/src/cli.mjs --run --manifest experiments/composition-topology/runs/manifest.json --results experiments/composition-topology/runs/results.jsonl --concurrency 1",
+    "composition:analyze": "node experiments/composition-topology/src/cli.mjs --analyze --manifest experiments/composition-topology/runs/manifest.json --results experiments/composition-topology/runs/results.jsonl --output experiments/composition-topology/reports/latest"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "0.84.2",
