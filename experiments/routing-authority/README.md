@@ -1,6 +1,6 @@
 # SkillScope Routing Authority Experiment
 
-状态：**真实两臂工程preflight通过；尚未生成或运行36-trial正式Pilot。**
+状态：**36/36 live Pilot已完成；审核结论见[人工复核](./reports/latest/README.md)。**
 
 本实验固定同一main Skill、同一原子Skill、两次child Scope与Runtime自动child-evidence binding，只比较模型根据routing cue选顺序和工作流声明依赖后由Runtime侧给出顺序。完整设计见[预注册](../../docs/research/SkillScope路由权责实验预注册_v1.md)。
 
@@ -25,3 +25,5 @@ npm run routing:analyze
 ```
 
 正式plan要求结果相关文件已进入clean commit；每个results文件只允许单进程writer。
+
+当前探索性结果：`MODEL_ROUTED`与`RUNTIME_ROUTED` Hard Pass为`15/18`和`17/18`，实际路由正确为`15/18`和`18/18`；全体`36/36` Runtime child-evidence binding与生命周期门通过，`EVIDENCE_NOT_VISIBLE=0`。这支持继续开发author-declared Runtime plan，不表示Runtime已经能自动发现自然任务依赖。

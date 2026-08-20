@@ -72,17 +72,19 @@ function pairedSummary(records) {
 
 function evaluateGates(conditions, eligible) {
   const model = conditions.MODEL_ROUTED; const runtime = conditions.RUNTIME_ROUTED;
+  const contextLimit = 1846.5;
   const checks = {
     p0EvidenceRejectionsZero: eligible.every((record) => record.error?.code !== "EVIDENCE_NOT_VISIBLE"),
     p0CanonicalEvidenceAll: eligible.length > 0 && eligible.every(canonicalEvidenceBound),
     h1RuntimeRoutePerfect: runtime.eligible > 0 && runtime.routePassRate === 1,
     h1RuntimeHardPassNotWorse: finiteNumber(runtime.hardPassRate) && finiteNumber(model.hardPassRate) && runtime.hardPassRate >= model.hardPassRate,
     h1RuntimeConsistencyNotWorse: finiteNumber(runtime.familyConsistencyRate) && finiteNumber(model.familyConsistencyRate) && runtime.familyConsistencyRate >= model.familyConsistencyRate,
+    h3ParentContextBounded: CONDITIONS.every((condition) => finiteNumber(conditions[condition].medianParentProviderContextTokens) && conditions[condition].medianParentProviderContextTokens <= contextLimit),
     h3SentinelZero: eligible.every((record) => record.sentinel?.visibleInParent === false),
     h4LifecycleAll: eligible.length > 0 && eligible.every((record) => record.lifecycle?.valid === true),
     h4SameSkillAndTwoChildren: eligible.length > 0 && eligible.every((record) => record.topology?.sameAtomicSkill === true && record.scopes?.filter((scope) => scope.depth === 1).length === 2),
   };
-  return { supported: Object.values(checks).every(Boolean), checks };
+  return { supported: Object.values(checks).every(Boolean), contextLimit, checks };
 }
 
 export function canonicalEvidenceBound(record) {
@@ -102,7 +104,7 @@ function renderReport(manifest, records, eligible, excluded, conditions, pairs, 
     "## 两组结果", "", "| 条件 | Hard Pass | 路由正确 | Runtime证据绑定 | family一致 | 拒答 | confident wrong | 父context | tree tokens | 延迟ms |", "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ...CONDITIONS.map((condition) => row(conditions[condition])), "",
     "## 配对差值（Runtime − Model）", "", `- 完整配对块：${pairs.completeBlocks}`, `- Hard Pass：${formatSignedRate(pairs.hardPassDifference)}`, `- 路由正确：${formatSignedRate(pairs.routePassDifference)}`, `- Tree tokens：${formatSigned(pairs.treeTokenDifference)}`, `- 延迟：${formatSigned(pairs.latencyDifferenceMs)} ms`, "",
-    "## 预定门", "", ...Object.entries(gates.checks).map(([name, passed]) => `- ${passed ? "PASS" : "FAIL"} — ${name}`), "", `总体：**${gates.supported ? "SUPPORTED FOR CONTINUED DEVELOPMENT" : "NOT SUPPORTED"}**。`, "",
+    "## 预定门", "", `父context冻结上限：${gates.contextLimit} tokens。`, "", ...Object.entries(gates.checks).map(([name, passed]) => `- ${passed ? "PASS" : "FAIL"} — ${name}`), "", `总体：**${gates.supported ? "SUPPORTED FOR CONTINUED DEVELOPMENT" : "NOT SUPPORTED"}**。`, "",
     "## 解释边界", "", "- Runtime组使用作者已知的依赖声明，是声明式工作流上界；不是Runtime自动理解自然语言并发现依赖。", "- Runtime child-evidence binding是两组共同基础设施；它修复上一轮provenance混杂，但本实验不估计它本身的因果收益。", "- 六个构造family、三个repeat、单一模型只支持探索性产品决策。", "",
   ].join("\n")}\n`;
 }

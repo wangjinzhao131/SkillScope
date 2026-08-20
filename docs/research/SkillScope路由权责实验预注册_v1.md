@@ -1,6 +1,6 @@
 # SkillScope 路由权责实验预注册 v1
 
-状态：**DESIGN FROZEN / ENGINEERING PREFLIGHT PASSED / NO PILOT DATA。**
+状态：**PILOT COMPLETE / 36 LIVE TRIALS / EXPLORATORY。**
 
 日期：2026-08-20（Asia/Shanghai）
 

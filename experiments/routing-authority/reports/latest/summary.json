@@ -1,0 +1,76 @@
+{
+  "manifestHash": "sha256:9af2b09c6c871941ed7d668d7b8991b4c79c3c164c86b10fa1a9f8e77a6cbca8",
+  "conditions": {
+    "MODEL_ROUTED": {
+      "condition": "MODEL_ROUTED",
+      "planned": 18,
+      "eligible": 18,
+      "hardPasses": 15,
+      "hardPassRate": 0.8333333333333334,
+      "routePasses": 15,
+      "routePassRate": 0.8333333333333334,
+      "canonicalBindingPasses": 18,
+      "canonicalBindingRate": 1,
+      "abstained": 3,
+      "confidentWrong": 0,
+      "consistentFamilies": 3,
+      "completeFamilies": 6,
+      "familyConsistencyRate": 0.5,
+      "lifecyclePasses": 18,
+      "medianParentProviderContextTokens": 984.5,
+      "medianParentMessageBytes": 4512.5,
+      "medianTreeTokens": 24961,
+      "medianLatencyMs": 22539.8488955,
+      "failureCodes": {
+        "TOPOLOGY_INVALID": 3
+      }
+    },
+    "RUNTIME_ROUTED": {
+      "condition": "RUNTIME_ROUTED",
+      "planned": 18,
+      "eligible": 18,
+      "hardPasses": 17,
+      "hardPassRate": 0.9444444444444444,
+      "routePasses": 18,
+      "routePassRate": 1,
+      "canonicalBindingPasses": 18,
+      "canonicalBindingRate": 1,
+      "abstained": 1,
+      "confidentWrong": 0,
+      "consistentFamilies": 5,
+      "completeFamilies": 6,
+      "familyConsistencyRate": 0.8333333333333334,
+      "lifecyclePasses": 18,
+      "medianParentProviderContextTokens": 962,
+      "medianParentMessageBytes": 4322,
+      "medianTreeTokens": 24689,
+      "medianLatencyMs": 20754.3583545,
+      "failureCodes": {
+        "ABSTAINED": 1
+      }
+    }
+  },
+  "pairs": {
+    "completeBlocks": 18,
+    "hardPassDifference": 0.1111111111111111,
+    "routePassDifference": 0.16666666666666666,
+    "treeTokenDifference": -572.2222222222222,
+    "latencyDifferenceMs": -2398.349773111111
+  },
+  "gates": {
+    "supported": true,
+    "contextLimit": 1846.5,
+    "checks": {
+      "p0EvidenceRejectionsZero": true,
+      "p0CanonicalEvidenceAll": true,
+      "h1RuntimeRoutePerfect": true,
+      "h1RuntimeHardPassNotWorse": true,
+      "h1RuntimeConsistencyNotWorse": true,
+      "h3ParentContextBounded": true,
+      "h3SentinelZero": true,
+      "h4LifecycleAll": true,
+      "h4SameSkillAndTwoChildren": true
+    }
+  },
+  "excluded": 0
+}

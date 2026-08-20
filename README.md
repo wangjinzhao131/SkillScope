@@ -90,6 +90,8 @@ node_modules/.bin/pi \
 
 同一Skill、不同组合拓扑的72-job延伸Pilot也已完成。在四个构造性方向依赖family上，匹配固定串行、自适应、并行、错误方向的Hard Pass分别为`8/12`、`11/12`、`0/12`、`0/12`，说明typed结果的流向和顺序确实有表达力；父context四臂都约一千tokens，Sentinel父可见为零。但independent负对照四臂spread为`66.7pp`，`13/72`个main因错误child evidence locator被Runtime拒绝，三次语义一致率只有`50.0%–66.7%`。所以本轮支持继续做自适应组合和Runtime自动provenance，不支持声称组合已经普遍提高稳定性。见[组合拓扑人工复核](./experiments/composition-topology/reports/latest/README.md)。
 
+沿这个失败继续收敛后，36-trial路由权责Pilot把证据引用统一交给Runtime，只比较“模型每次从cue判断组合方式”和“作者声明依赖、Runtime侧给出plan”。两组Hard Pass为`15/18`与`17/18`，实际路由正确为`15/18`与`18/18`，family三次一致为`3/6`与`5/6`；Runtime组没有增加调用，平均还少572 tree tokens、快2.4秒。全体`36/36` canonical child evidence与生命周期有效，`EVIDENCE_NOT_VISIBLE=0`。这支持“依赖已知时，把它写成声明式Runtime plan”，不证明Runtime能自动发现依赖，也不证明自然任务必有同等收益。见[路由权责人工复核](./experiments/routing-authority/reports/latest/README.md)。
+
 - 真实 `deepseek-v4-flash`：源码宿主完整 E2E 和一次“npm tarball → 全新安装 → 真实父 Pi → 已安装 Extension → 真实子 Session”历史手工链均为 `SUCCESS`。后者的自动重放脚本在 180 秒和 300 秒外层上限下都超时，尚不能称为稳定的一键复现入口。
 - 新 Trace E2E 断言：授权 exact-file 是唯一物理物化/实际读取/模型可见资源；项目根枚举被拒绝；业务路径、诊断正文和 API key 未以明文进入外置 `metadata-only-v1` Trace。仓库中的审核版合成 E2E 摘要另行保留了非敏感 fixture 诊断，不能与 Trace 隐私边界混为一谈。
 - 独立安全门禁覆盖 7,168 条 hostile paths、1,024 个前缀碰撞及确定性 broker/Pi/Trace 攻击用例。
@@ -122,6 +124,7 @@ node_modules/.bin/pi \
 - [access-frontier Harness](./experiments/access-frontier/README.md)
 - [父上下文与嵌套 SkillScope 实验](./experiments/parent-context/README.md)
 - [同一 Skill 的组合拓扑实验](./experiments/composition-topology/README.md)
+- [模型路由与 Runtime 声明路由实验](./experiments/routing-authority/README.md)
 - [Pi E2E 复现](./experiments/pi-e2e/README.md)
 
 原始 live manifests/results 默认被 Git 忽略，因为它们含隐藏真值和未审阅模型输出；仓库只提交审核后的聚合报告、hash 和脱敏 E2E 摘要。

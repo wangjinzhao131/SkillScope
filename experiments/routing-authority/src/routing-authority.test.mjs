@@ -31,7 +31,13 @@ test("canonical evidence must name only the two actual children", () => {
 test("analyzer reports an ideal paired matrix", async () => {
   const manifest = await buildManifest({ allowDirty: true, repeats: 3, createdAt: "2026-08-20T00:00:00.000Z" });
   const records = manifest.jobs.map((job) => idealRecord(job, manifest.manifestHash)); const directory = await mkdtemp(join(tmpdir(), "routing-analysis-"));
-  try { const summary = await analyzeExperiment(manifest, records, directory); assert.equal(summary.gates.supported, true); assert.equal(summary.conditions.RUNTIME_ROUTED.hardPassRate, 1); assert.match(await readFile(join(directory, "report.md"), "utf8"), /Runtime证据绑定/u); }
+  try {
+    const summary = await analyzeExperiment(manifest, records, directory);
+    assert.equal(summary.gates.supported, true); assert.equal(summary.gates.checks.h3ParentContextBounded, true); assert.equal(summary.conditions.RUNTIME_ROUTED.hardPassRate, 1); assert.match(await readFile(join(directory, "report.md"), "utf8"), /Runtime证据绑定/u);
+    const oversized = records.map((record) => ({ ...record, parentMetrics: { ...record.parentMetrics, parentProviderContextTokens: 2000 } }));
+    const rejected = await analyzeExperiment(manifest, oversized, directory);
+    assert.equal(rejected.gates.checks.h3ParentContextBounded, false); assert.equal(rejected.gates.supported, false);
+  }
   finally { await rm(directory, { recursive: true, force: true }); }
 });
 
