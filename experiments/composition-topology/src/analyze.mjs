@@ -35,7 +35,7 @@ function validateInputs(manifest, records) {
 function summarizeCondition(condition, records, manifest) {
   const hardPasses = records.filter((record) => record.verification?.hardPass === true).length;
   const abstained = records.filter((record) => record.verification?.abstained === true).length;
-  const confidentWrong = records.filter((record) => record.verification?.confidentWrong === true).length;
+  const confidentWrong = records.filter(confidentSemanticWrong).length;
   const consistency = familyConsistency(records);
   return {
     condition,
@@ -69,7 +69,7 @@ function summarizeStrata(records) {
     for (const condition of CONDITIONS) {
       const cells = records.filter((record) => record.dependencyDirection === direction && record.condition === condition);
       const passes = cells.filter((record) => record.verification?.hardPass === true).length;
-      result[direction][condition] = { eligible: cells.length, hardPasses: passes, hardPassRate: rate(passes, cells.length), abstained: cells.filter((record) => record.verification?.abstained === true).length, confidentWrong: cells.filter((record) => record.verification?.confidentWrong === true).length };
+      result[direction][condition] = { eligible: cells.length, hardPasses: passes, hardPassRate: rate(passes, cells.length), abstained: cells.filter((record) => record.verification?.abstained === true).length, confidentWrong: cells.filter(confidentSemanticWrong).length };
     }
   }
   return result;
@@ -93,6 +93,9 @@ function summarizeMechanism(records) {
     adaptiveDirectionEligible: adaptiveCells.length,
     adaptiveDirectionRate: rate(adaptiveDirectionHits, adaptiveCells.length),
     independentHardPassSpread: independentRates.length > 0 ? Math.max(...independentRates) - Math.min(...independentRates) : null,
+    runtimeEvidenceRejections: records.filter((record) => record.error?.code === "EVIDENCE_NOT_VISIBLE").length,
+    confirmedWrongTopologyExecutions: records.filter((record) => record.topology?.valid !== true && record.mainResult && !record.error).length,
+    topologyUnverifiableAfterMainRejection: records.filter((record) => record.topology?.valid !== true && !record.mainResult).length,
   };
 }
 
@@ -151,13 +154,16 @@ function renderReport(manifest, records, eligible, excluded, conditions, strata,
     `- 方向依赖任务 adaptive：${countRate(mechanism.adaptive)}`,
     `- Adaptive首调用方向命中：${mechanism.adaptiveDirectionHits}/${mechanism.adaptiveDirectionEligible} (${formatRate(mechanism.adaptiveDirectionRate)})`,
     `- Independent四条件Hard Pass spread：${formatRate(mechanism.independentHardPassSpread)}`,
+    `- Runtime evidence visibility拒绝：${mechanism.runtimeEvidenceRejections}/${eligible.length}`,
+    `- 已确认执行了错误拓扑：${mechanism.confirmedWrongTopologyExecutions}/${eligible.length}`,
+    `- main被Runtime拒绝后无法核验完整拓扑：${mechanism.topologyUnverifiableAfterMainRejection}/${eligible.length}`,
     "",
     "## 预定成功门",
     "",
     ...Object.entries(gates.checks).map(([name, passed]) => `- ${passed ? "PASS" : "FAIL"} — ${name}`),
     "",
     `组合方向总体：**${gates.supported ? "SUPPORTED FOR CONTINUED DEVELOPMENT" : "NOT SUPPORTED"}**。`,
-    `自适应路由：**${gates.adaptiveSupported ? "SUPPORTED" : "NOT SUPPORTED"}**。`,
+    `构造性方向依赖任务的自适应方向门：**${gates.adaptiveSupported ? "PASSED" : "FAILED"}**。`,
     "",
     "## 解释边界",
     "",
@@ -172,7 +178,7 @@ function renderReport(manifest, records, eligible, excluded, conditions, strata,
 
 function trialsCsv(records) {
   const columns = ["jobId", "blockId", "familyId", "dependencyDirection", "repeat", "condition", "status", "hardPass", "failureCode", "abstained", "confidentWrong", "topologyValid", "observedFirstRole", "upstreamPassedToSecond", "lifecycleValid", "parentProviderContextTokens", "parentMessageBytes", "treeTokens", "wallTimeMs"];
-  const rows = records.map((record) => [record.jobId, record.blockId, record.familyId, record.dependencyDirection, record.repeat, record.condition, record.status, record.verification?.hardPass, record.verification?.failureCode, record.verification?.abstained, record.verification?.confidentWrong, record.topology?.valid, record.topology?.observedFirstRole, record.topology?.upstreamPassedToSecond, record.lifecycle?.valid, record.parentMetrics?.parentProviderContextTokens, record.parentMetrics?.parentMessageBytes, record.usage?.tree?.totalTokens, record.wallTimeMs]);
+  const rows = records.map((record) => [record.jobId, record.blockId, record.familyId, record.dependencyDirection, record.repeat, record.condition, record.status, record.verification?.hardPass, record.verification?.failureCode, record.verification?.abstained, confidentSemanticWrong(record), record.topology?.valid, record.topology?.observedFirstRole, record.topology?.upstreamPassedToSecond, record.lifecycle?.valid, record.parentMetrics?.parentProviderContextTokens, record.parentMetrics?.parentMessageBytes, record.usage?.tree?.totalTokens, record.wallTimeMs]);
   return `${[columns, ...rows].map((row) => row.map(csvCell).join(",")).join("\n")}\n`;
 }
 
@@ -182,7 +188,7 @@ function familyConsistency(records) {
   const consistent = complete.filter((values) => new Set(values.map((record) => JSON.stringify({ decision: record.parentResult?.decision, constraintFact: record.parentResult?.constraintFact, observationFact: record.parentResult?.observationFact }))).size === 1).length;
   return { consistent, total: complete.length, rate: rate(consistent, complete.length) };
 }
-function passSummary(cells) { const hardPasses = cells.filter((record) => record.verification?.hardPass === true).length; return { eligible: cells.length, hardPasses, hardPassRate: rate(hardPasses, cells.length), abstained: cells.filter((record) => record.verification?.abstained === true).length, confidentWrong: cells.filter((record) => record.verification?.confidentWrong === true).length }; }
+function passSummary(cells) { const hardPasses = cells.filter((record) => record.verification?.hardPass === true).length; return { eligible: cells.length, hardPasses, hardPassRate: rate(hardPasses, cells.length), abstained: cells.filter((record) => record.verification?.abstained === true).length, confidentWrong: cells.filter(confidentSemanticWrong).length }; }
 function isMatchedFixed(record) { return (record.dependencyDirection === "constraint-first" && record.condition === "CONSTRAINT_FIRST") || (record.dependencyDirection === "observation-first" && record.condition === "OBSERVATION_FIRST"); }
 function isWrongFixed(record) { return (record.dependencyDirection === "constraint-first" && record.condition === "OBSERVATION_FIRST") || (record.dependencyDirection === "observation-first" && record.condition === "CONSTRAINT_FIRST"); }
 function expectedDirectionRole(direction) { return direction === "observation-first" ? "observation" : "constraint"; }
@@ -195,6 +201,14 @@ function rate(numerator, denominator) { return denominator > 0 ? numerator / den
 function finiteNumber(value) { return typeof value === "number" && Number.isFinite(value); }
 function finiteRate(value) { return finiteNumber(value); }
 function counts(values) { return Object.fromEntries([...new Set(values)].sort().map((value) => [value, values.filter((item) => item === value).length])); }
+function confidentSemanticWrong(record) {
+  if (!["ALLOW", "BLOCK"].includes(record.parentResult?.decision)) return false;
+  const checks = record.verification?.checks;
+  if (checks && typeof checks === "object") {
+    return checks.decision === false || checks.constraintFact === false || checks.observationFact === false;
+  }
+  return record.verification?.confidentWrong === true;
+}
 function formatRate(value) { return finiteNumber(value) ? `${(value * 100).toFixed(1)}%` : "NA"; }
 function formatNumber(value) { return finiteNumber(value) ? value.toFixed(1) : "NA"; }
 function csvCell(value) { const text = value === undefined || value === null ? "" : String(value); return /[",\n]/u.test(text) ? `"${text.replaceAll('"', '""')}"` : text; }

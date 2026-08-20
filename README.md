@@ -88,6 +88,8 @@ node_modules/.bin/pi \
 
 但这不是“全面胜利”：Nested相对Inline的调用树tokens增加154.4%、延迟增加287.9%；Freeform、Flat、Nested在当前简单任务上也都满分，因此这里只能说稳定性**没有下降**，不能证明结构化返回或嵌套已经**提高**稳定性。当前证据支持继续优化“用总工作量换父上下文”的产品方向，不支持把现实现称为总体效率最优。设计与完整解释见[父上下文与嵌套 SkillScope 实验](./experiments/parent-context/README.md)和[聚合报告](./experiments/parent-context/reports/latest/report.md)。以下访问实验只提供底层边界与 Harness 经验，不能替代这项根本目标证据。
 
+同一Skill、不同组合拓扑的72-job延伸Pilot也已完成。在四个构造性方向依赖family上，匹配固定串行、自适应、并行、错误方向的Hard Pass分别为`8/12`、`11/12`、`0/12`、`0/12`，说明typed结果的流向和顺序确实有表达力；父context四臂都约一千tokens，Sentinel父可见为零。但independent负对照四臂spread为`66.7pp`，`13/72`个main因错误child evidence locator被Runtime拒绝，三次语义一致率只有`50.0%–66.7%`。所以本轮支持继续做自适应组合和Runtime自动provenance，不支持声称组合已经普遍提高稳定性。见[组合拓扑人工复核](./experiments/composition-topology/reports/latest/README.md)。
+
 - 真实 `deepseek-v4-flash`：源码宿主完整 E2E 和一次“npm tarball → 全新安装 → 真实父 Pi → 已安装 Extension → 真实子 Session”历史手工链均为 `SUCCESS`。后者的自动重放脚本在 180 秒和 300 秒外层上限下都超时，尚不能称为稳定的一键复现入口。
 - 新 Trace E2E 断言：授权 exact-file 是唯一物理物化/实际读取/模型可见资源；项目根枚举被拒绝；业务路径、诊断正文和 API key 未以明文进入外置 `metadata-only-v1` Trace。仓库中的审核版合成 E2E 摘要另行保留了非敏感 fixture 诊断，不能与 Trace 隐私边界混为一谈。
 - 独立安全门禁覆盖 7,168 条 hostile paths、1,024 个前缀碰撞及确定性 broker/Pi/Trace 攻击用例。

@@ -290,7 +290,8 @@ function verifyParentCompletion(job, submitted, promptError, turns, timeoutMs, o
   };
   const hardPass = Object.values(checks).every(Boolean);
   const abstained = submitted.decision === "ABSTAIN";
-  const confidentWrong = !hardPass && ["ALLOW", "BLOCK"].includes(submitted.decision);
+  const confidentWrong = ["ALLOW", "BLOCK"].includes(submitted.decision)
+    && (!checks.decision || !checks.constraintFact || !checks.observationFact);
   const failureCode = hardPass ? null : !checks.topology ? "TOPOLOGY_INVALID" : abstained ? "ABSTAINED" : "WRONG_PARENT_RESULT";
   return { hardPass, schemaPass: true, abstained, confidentWrong, failureCode, checks, parentTurns: turns, timeoutMs };
 }

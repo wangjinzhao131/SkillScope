@@ -2,7 +2,7 @@
 
 本实验固定同一个 `workflow-compose` main Skill 和同一个 `inspect-contextual-evidence` 原子 Skill；每个条件都恰好创建一个main Scope和两个原子child Scope，只改变执行顺序以及第一个Runtime-valid结果是否传给第二个Scope。
 
-状态：**设计与实现已冻结；四臂真实工程preflight通过；尚无72-job live效果数据。** 完整因果口径、任务机制、成功门和停止规则见[预注册](../../docs/research/SkillScope组合拓扑实验预注册_v1.md)。
+状态：**72-job探索性live Pilot已完成。** 信息流方向机制与自适应方向门通过，但independent负对照和全拓扑稳定性门失败；完整结论见[人工复核](./reports/latest/README.md)，冻结设计见[预注册](../../docs/research/SkillScope组合拓扑实验预注册_v1.md)。
 
 ## 四个条件
 
@@ -43,3 +43,7 @@ npm run composition:analyze
 - direction-matched提升首先是组合表达力证据，不直接等于自然任务收益。
 - independent family是负对照；若四条件在这里明显分化，应先检查实现和预算不等价。
 - 正确率提升必须与父上下文、tree token、延迟和生命周期一起报告。
+
+## 当前结果一句话
+
+方向匹配的typed串行与Adaptive在构造依赖任务上明显优于并行/错误方向，但`13/72`个main结果因手工child evidence locator不可见而被Runtime拒绝，independent负对照spread达到`66.7pp`；因此证明了组合表达力，也暴露了Runtime provenance接口的稳定性瓶颈，尚未证明普遍稳定性提升。

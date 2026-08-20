@@ -72,6 +72,30 @@ test("analyzer applies direction, adaptive, negative-control, context, and lifec
   assert.match(await readFile(join(output, "report.md"), "utf8"), /SUPPORTED FOR CONTINUED DEVELOPMENT/);
 });
 
+test("analysis does not relabel a correct answer as confident-wrong solely because topology was invalid", async (t) => {
+  const manifest = await buildManifest({ allowDirty: true });
+  const output = await mkdtemp(join(tmpdir(), "skillscope-composition-amendment-"));
+  t.after(() => rm(output, { recursive: true, force: true }));
+  const records = manifest.jobs.map((job) => fakeRecord(job, manifest.manifestHash));
+  const target = records.find((record) => record.dependencyDirection === "independent" && record.condition === "ADAPTIVE_ORDER");
+  target.status = "capability_failure";
+  target.verification = {
+    hardPass: false,
+    schemaPass: true,
+    abstained: false,
+    confidentWrong: true,
+    failureCode: "TOPOLOGY_INVALID",
+    checks: { decision: true, constraintFact: true, observationFact: true, memoryCode: true, mainStatus: true, childStatuses: true, topology: false },
+  };
+  target.topology = { ...target.topology, valid: false, observedFirstRole: "parallel", upstreamPassedToSecond: false };
+  target.mainResult = { decision: target.parentResult.decision };
+
+  const summary = await analyzeExperiment(manifest, records, output);
+  assert.equal(summary.conditions.ADAPTIVE_ORDER.confidentWrong, 0);
+  assert.equal(summary.mechanism.confirmedWrongTopologyExecutions, 1);
+  assert.match(await readFile(join(output, "trials.csv"), "utf8"), new RegExp(`${target.jobId}[^\\n]*,false,false,`));
+});
+
 function fakeRecord(job, manifestHash) {
   const directional = job.family.dependencyDirection !== "independent";
   const matched = !directional

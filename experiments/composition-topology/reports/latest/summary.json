@@ -1,0 +1,254 @@
+{
+  "manifestHash": "sha256:1796bfaeac7fad43ef5c0e2137443c087a64ef6ba47847bb0309fe7aa6c2af25",
+  "conditions": {
+    "PARALLEL_JOIN": {
+      "condition": "PARALLEL_JOIN",
+      "planned": 18,
+      "eligible": 18,
+      "hardPasses": 3,
+      "hardPassRate": 0.16666666666666666,
+      "abstained": 15,
+      "abstainRate": 0.8333333333333334,
+      "confidentWrong": 0,
+      "confidentWrongRate": 0,
+      "topologyPasses": 15,
+      "lifecyclePasses": 18,
+      "familyConsistencyRate": 0.6666666666666666,
+      "consistentFamilies": 4,
+      "completeFamilies": 6,
+      "medianParentProviderContextTokens": 1004.5,
+      "medianParentEstimatedContextTokens": 362.5,
+      "medianParentMessageBytes": 4462,
+      "medianParentToolResultBytes": 756.5,
+      "medianTreeTokens": 21686.5,
+      "medianLatencyMs": 18676.346125,
+      "failureCodes": {
+        "ABSTAINED": 12,
+        "TOPOLOGY_INVALID": 3
+      }
+    },
+    "CONSTRAINT_FIRST": {
+      "condition": "CONSTRAINT_FIRST",
+      "planned": 18,
+      "eligible": 18,
+      "hardPasses": 8,
+      "hardPassRate": 0.4444444444444444,
+      "abstained": 10,
+      "abstainRate": 0.5555555555555556,
+      "confidentWrong": 0,
+      "confidentWrongRate": 0,
+      "topologyPasses": 14,
+      "lifecyclePasses": 18,
+      "familyConsistencyRate": 0.6666666666666666,
+      "consistentFamilies": 4,
+      "completeFamilies": 6,
+      "medianParentProviderContextTokens": 1004,
+      "medianParentEstimatedContextTokens": 378,
+      "medianParentMessageBytes": 4515,
+      "medianParentToolResultBytes": 777,
+      "medianTreeTokens": 25101,
+      "medianLatencyMs": 27005.917583000002,
+      "failureCodes": {
+        "ABSTAINED": 6,
+        "TOPOLOGY_INVALID": 4
+      }
+    },
+    "OBSERVATION_FIRST": {
+      "condition": "OBSERVATION_FIRST",
+      "planned": 18,
+      "eligible": 18,
+      "hardPasses": 8,
+      "hardPassRate": 0.4444444444444444,
+      "abstained": 10,
+      "abstainRate": 0.5555555555555556,
+      "confidentWrong": 0,
+      "confidentWrongRate": 0,
+      "topologyPasses": 14,
+      "lifecyclePasses": 18,
+      "familyConsistencyRate": 0.5,
+      "consistentFamilies": 3,
+      "completeFamilies": 6,
+      "medianParentProviderContextTokens": 996.5,
+      "medianParentEstimatedContextTokens": 381,
+      "medianParentMessageBytes": 4521.5,
+      "medianParentToolResultBytes": 790.5,
+      "medianTreeTokens": 25260,
+      "medianLatencyMs": 28761.802125000002,
+      "failureCodes": {
+        "ABSTAINED": 6,
+        "TOPOLOGY_INVALID": 4
+      }
+    },
+    "ADAPTIVE_ORDER": {
+      "condition": "ADAPTIVE_ORDER",
+      "planned": 18,
+      "eligible": 18,
+      "hardPasses": 15,
+      "hardPassRate": 0.8333333333333334,
+      "abstained": 2,
+      "abstainRate": 0.1111111111111111,
+      "confidentWrong": 0,
+      "confidentWrongRate": 0,
+      "topologyPasses": 15,
+      "lifecyclePasses": 18,
+      "familyConsistencyRate": 0.6666666666666666,
+      "consistentFamilies": 4,
+      "completeFamilies": 6,
+      "medianParentProviderContextTokens": 989.5,
+      "medianParentEstimatedContextTokens": 371,
+      "medianParentMessageBytes": 4499.5,
+      "medianParentToolResultBytes": 833,
+      "medianTreeTokens": 24910,
+      "medianLatencyMs": 26582.6826665,
+      "failureCodes": {
+        "TOPOLOGY_INVALID": 3
+      }
+    }
+  },
+  "strata": {
+    "constraint-first": {
+      "PARALLEL_JOIN": {
+        "eligible": 6,
+        "hardPasses": 0,
+        "hardPassRate": 0,
+        "abstained": 6,
+        "confidentWrong": 0
+      },
+      "CONSTRAINT_FIRST": {
+        "eligible": 6,
+        "hardPasses": 6,
+        "hardPassRate": 1,
+        "abstained": 0,
+        "confidentWrong": 0
+      },
+      "OBSERVATION_FIRST": {
+        "eligible": 6,
+        "hardPasses": 0,
+        "hardPassRate": 0,
+        "abstained": 6,
+        "confidentWrong": 0
+      },
+      "ADAPTIVE_ORDER": {
+        "eligible": 6,
+        "hardPasses": 6,
+        "hardPassRate": 1,
+        "abstained": 0,
+        "confidentWrong": 0
+      }
+    },
+    "observation-first": {
+      "PARALLEL_JOIN": {
+        "eligible": 6,
+        "hardPasses": 0,
+        "hardPassRate": 0,
+        "abstained": 6,
+        "confidentWrong": 0
+      },
+      "CONSTRAINT_FIRST": {
+        "eligible": 6,
+        "hardPasses": 0,
+        "hardPassRate": 0,
+        "abstained": 6,
+        "confidentWrong": 0
+      },
+      "OBSERVATION_FIRST": {
+        "eligible": 6,
+        "hardPasses": 2,
+        "hardPassRate": 0.3333333333333333,
+        "abstained": 4,
+        "confidentWrong": 0
+      },
+      "ADAPTIVE_ORDER": {
+        "eligible": 6,
+        "hardPasses": 5,
+        "hardPassRate": 0.8333333333333334,
+        "abstained": 1,
+        "confidentWrong": 0
+      }
+    },
+    "independent": {
+      "PARALLEL_JOIN": {
+        "eligible": 6,
+        "hardPasses": 3,
+        "hardPassRate": 0.5,
+        "abstained": 3,
+        "confidentWrong": 0
+      },
+      "CONSTRAINT_FIRST": {
+        "eligible": 6,
+        "hardPasses": 2,
+        "hardPassRate": 0.3333333333333333,
+        "abstained": 4,
+        "confidentWrong": 0
+      },
+      "OBSERVATION_FIRST": {
+        "eligible": 6,
+        "hardPasses": 6,
+        "hardPassRate": 1,
+        "abstained": 0,
+        "confidentWrong": 0
+      },
+      "ADAPTIVE_ORDER": {
+        "eligible": 6,
+        "hardPasses": 4,
+        "hardPassRate": 0.6666666666666666,
+        "abstained": 1,
+        "confidentWrong": 0
+      }
+    }
+  },
+  "mechanism": {
+    "parallel": {
+      "eligible": 12,
+      "hardPasses": 0,
+      "hardPassRate": 0,
+      "abstained": 12,
+      "confidentWrong": 0
+    },
+    "matched": {
+      "eligible": 12,
+      "hardPasses": 8,
+      "hardPassRate": 0.6666666666666666,
+      "abstained": 4,
+      "confidentWrong": 0
+    },
+    "wrongDirection": {
+      "eligible": 12,
+      "hardPasses": 0,
+      "hardPassRate": 0,
+      "abstained": 12,
+      "confidentWrong": 0
+    },
+    "adaptive": {
+      "eligible": 12,
+      "hardPasses": 11,
+      "hardPassRate": 0.9166666666666666,
+      "abstained": 1,
+      "confidentWrong": 0
+    },
+    "adaptiveDirectionHits": 11,
+    "adaptiveDirectionEligible": 12,
+    "adaptiveDirectionRate": 0.9166666666666666,
+    "independentHardPassSpread": 0.6666666666666667,
+    "runtimeEvidenceRejections": 13,
+    "confirmedWrongTopologyExecutions": 1,
+    "topologyUnverifiableAfterMainRejection": 13
+  },
+  "gates": {
+    "supported": false,
+    "adaptiveSupported": true,
+    "checks": {
+      "h1MatchedAboveParallel": true,
+      "h1MatchedAboveWrongDirection": true,
+      "h2AdaptiveDirection75": true,
+      "h2AdaptiveWithin10ppMatched": true,
+      "h3IndependentSpread20pp": false,
+      "h4ParentContextBounded": true,
+      "h4SentinelZero": true,
+      "h5TopologyAllValid": false,
+      "h5LifecycleAllValid": true
+    },
+    "contextLimit": 1846.5
+  },
+  "excluded": 0
+}

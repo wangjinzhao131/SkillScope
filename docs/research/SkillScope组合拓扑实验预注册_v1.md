@@ -1,6 +1,6 @@
 # SkillScope 组合拓扑实验预注册 v1
 
-状态：**DESIGN + IMPLEMENTATION FROZEN / ENGINEERING PREFLIGHT PASS / NO EFFECT DATA。** 本文在新增实验 Skill、Harness 和任何任务模型调用前冻结。实现阶段允许修复代码与协议错误，但首次 live preflight 后不得静默修改任务 truth、主要指标、条件定义或成功标准；任何 outcome-relevant 修订必须换新协议与 manifest。
+状态：**DESIGN + IMPLEMENTATION FROZEN / 72-JOB EXPLORATORY LIVE PILOT COMPLETE。** 本文在新增实验 Skill、Harness 和任何任务模型调用前冻结。实现阶段允许修复代码与协议错误，但首次 live preflight 后不得静默修改任务 truth、主要指标、条件定义或成功标准；任何 outcome-relevant 修订必须换新协议与 manifest。结果与post-run派生指标修正见[人工复核](../../experiments/composition-topology/reports/latest/README.md)。
 
 日期：2026-08-20（Asia/Shanghai）
 
