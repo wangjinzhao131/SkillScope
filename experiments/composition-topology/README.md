@@ -2,7 +2,7 @@
 
 本实验固定同一个 `workflow-compose` main Skill 和同一个 `inspect-contextual-evidence` 原子 Skill；每个条件都恰好创建一个main Scope和两个原子child Scope，只改变执行顺序以及第一个Runtime-valid结果是否传给第二个Scope。
 
-状态：**设计已冻结，实现中，尚无live效果数据。** 完整因果口径、任务机制、成功门和停止规则见[预注册](../../docs/research/SkillScope组合拓扑实验预注册_v1.md)。
+状态：**设计与实现已冻结；四臂真实工程preflight通过；尚无72-job live效果数据。** 完整因果口径、任务机制、成功门和停止规则见[预注册](../../docs/research/SkillScope组合拓扑实验预注册_v1.md)。
 
 ## 四个条件
 
