@@ -88,6 +88,7 @@ export class PiInProcessBackend implements ScopeBackend {
       let completionResourceAudit: ScopeBackendResult["completionResourceAudit"];
       const childResults: SkillResult[] = [];
       const completion = createCompletionTool(request.skill.outputSchema, request.budget, request.onTrace, {
+        runtimeBindsChildEvidence: request.skill.delegationPolicy?.childEvidenceBinding === "runtime",
         beforeAccept(toolCallId) {
           const decision = completionBatchDecisions.get(toolCallId) ?? { accept: true };
           if (decision.accept) completionResourceAudit = gateway.snapshot();
@@ -417,7 +418,9 @@ function createChildSkillTool(request: ScopeBackendRequest, childResults: SkillR
     promptGuidelines: [
       `Only these child Skills are allowed: ${request.skill.delegationPolicy.allowedSkills.join(", ")}.`,
       "Each call creates a new Session; child messages and tool history are not inherited or returned.",
-      "Pass the smallest input and a resource-grant subset of this Scope. Use the returned scope:// ID as evidence when aggregating.",
+      request.skill.delegationPolicy.childEvidenceBinding === "runtime"
+        ? "Pass the smallest input and resource-grant subset. Runtime will bind the actual child results as evidence; do not copy scope IDs into scope_complete."
+        : "Pass the smallest input and a resource-grant subset of this Scope. Use the returned scope:// ID as evidence when aggregating.",
     ],
     executionMode: "parallel",
     parameters: schema,

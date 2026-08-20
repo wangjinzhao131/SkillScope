@@ -1,6 +1,6 @@
 {
   "name": "workflow-compose",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Run the same two atomic Skill calls under one frozen composition topology.",
   "promptFile": "SKILL.md",
   "inputSchema": {
@@ -9,7 +9,7 @@
       "question": { "type": "string", "minLength": 1, "maxLength": 2000 },
       "routingCue": { "type": "string", "minLength": 1, "maxLength": 1000 },
       "decisionRule": { "type": "string", "minLength": 1, "maxLength": 2000 },
-      "compositionMode": { "type": "string", "enum": ["PARALLEL_JOIN", "CONSTRAINT_FIRST", "OBSERVATION_FIRST", "ADAPTIVE_ORDER"] },
+      "compositionMode": { "type": "string", "enum": ["PARALLEL_JOIN", "CONSTRAINT_FIRST", "OBSERVATION_FIRST", "ADAPTIVE_ORDER", "MODEL_ROUTE"] },
       "constraintPath": { "type": "string", "minLength": 1, "maxLength": 512 },
       "observationPath": { "type": "string", "minLength": 1, "maxLength": 512 }
     },
@@ -37,7 +37,8 @@
   "delegationPolicy": {
     "allowedSkills": ["inspect-contextual-evidence"],
     "maxChildScopes": 2,
-    "maxConcurrency": 2
+    "maxConcurrency": 2,
+    "childEvidenceBinding": "runtime"
   },
   "budget": {
     "maxTurns": 8,

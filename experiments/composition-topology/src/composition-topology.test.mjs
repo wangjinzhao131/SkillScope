@@ -27,9 +27,9 @@ test("every arm uses the same main and same atomic Skill contract", async () => 
   const registry = new SkillRegistry(new URL("../../../skills/", import.meta.url).pathname);
   const main = await registry.load("workflow-compose");
   const atomic = await registry.load("inspect-contextual-evidence");
-  assert.deepEqual(main.delegationPolicy, { allowedSkills: ["inspect-contextual-evidence"], maxChildScopes: 2, maxConcurrency: 2 });
-  assert.deepEqual(atomic.delegationPolicy, { allowedSkills: [], maxChildScopes: 0, maxConcurrency: 1 });
-  assert.equal(main.version, "1.0.0");
+  assert.deepEqual(main.delegationPolicy, { allowedSkills: ["inspect-contextual-evidence"], maxChildScopes: 2, maxConcurrency: 2, childEvidenceBinding: "runtime" });
+  assert.deepEqual(atomic.delegationPolicy, { allowedSkills: [], maxChildScopes: 0, maxConcurrency: 1, childEvidenceBinding: "model" });
+  assert.equal(main.version, "1.1.0");
   assert.equal(atomic.version, "1.0.0");
 });
 

@@ -36,7 +36,9 @@ export function assembleChildPrompt(request: ScopeBackendRequest, refs: Material
           "Every scope_invoke_skill call creates a fresh disposable Session. Only its Runtime-validated result returns here.",
         ].join("\n")
       : "This Skill may not invoke child Skills.",
-    "Do the scoped task now. Cite evidence by resource and locator. If required evidence is outside the grants, return NEED_CONTEXT with requestedResources; do not guess.",
+    delegation.childEvidenceBinding === "runtime"
+      ? "Do the scoped task now. Runtime binds the actual child results as evidence; submit evidenceRefs: [] and do not copy Scope IDs. If required evidence is outside the grants, return NEED_CONTEXT with requestedResources; do not guess."
+      : "Do the scoped task now. Cite evidence by resource and locator. If required evidence is outside the grants, return NEED_CONTEXT with requestedResources; do not guess.",
   ];
   return sections.join("\n\n");
 }

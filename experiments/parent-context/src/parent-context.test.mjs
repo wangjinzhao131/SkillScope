@@ -32,7 +32,7 @@ test("experiment skills freeze flat and two-child nested contracts", async () =>
   const flat = await registry.load("workflow-flat");
   const constraint = await registry.load("inspect-constraint");
   const observation = await registry.load("inspect-observation");
-  assert.deepEqual(main.delegationPolicy, { allowedSkills: ["inspect-constraint", "inspect-observation"], maxChildScopes: 2, maxConcurrency: 2 });
+  assert.deepEqual(main.delegationPolicy, { allowedSkills: ["inspect-constraint", "inspect-observation"], maxChildScopes: 2, maxConcurrency: 2, childEvidenceBinding: "model" });
   assert.deepEqual(flat.delegationPolicy.allowedSkills, []);
   assert.deepEqual(constraint.allowedTools, ["scope_read"]);
   assert.deepEqual(observation.allowedTools, ["scope_read"]);

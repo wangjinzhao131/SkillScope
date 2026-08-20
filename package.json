@@ -21,11 +21,12 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run test:core && npm run test:pi && npm run test:parent-context && npm run test:composition && npm run test:fixtures && npm run test:experiment && npm run test:mechanism && npm run test:entropy && npm run test:resource-set && npm run test:analysis && npm run test:plugin-audit && npm run test:security",
+    "test": "npm run test:core && npm run test:pi && npm run test:parent-context && npm run test:composition && npm run test:routing && npm run test:fixtures && npm run test:experiment && npm run test:mechanism && npm run test:entropy && npm run test:resource-set && npm run test:analysis && npm run test:plugin-audit && npm run test:security",
     "test:core": "node --test tests/core/**/*.test.js",
     "test:pi": "node --test tests/pi/**/*.test.js",
     "test:parent-context": "node --test experiments/parent-context/src/*.test.mjs && node experiments/parent-context/src/cli.mjs --smoke",
     "test:composition": "node --test experiments/composition-topology/src/*.test.mjs && node experiments/composition-topology/src/cli.mjs --smoke",
+    "test:routing": "node --test experiments/routing-authority/src/*.test.mjs && node experiments/routing-authority/src/cli.mjs --smoke",
     "test:fixtures": "node --test experiments/access-frontier/tasks/*.test.mjs && node experiments/access-frontier/tasks/lint.mjs",
     "test:experiment": "node --test experiments/access-frontier/src/runner.test.mjs tests/experiment-audit/*.test.mjs",
     "test:mechanism": "node --test experiments/access-frontier/mechanism-suites/*.test.mjs && node experiments/access-frontier/mechanism-suites/lint.mjs && node experiments/access-frontier/mechanism-suites/executor.mjs --smoke",
@@ -47,7 +48,12 @@
     "composition:preflight": "node experiments/composition-topology/src/cli.mjs --preflight",
     "composition:plan": "node experiments/composition-topology/src/cli.mjs --plan experiments/composition-topology/runs/manifest.json",
     "composition:run": "node experiments/composition-topology/src/cli.mjs --run --manifest experiments/composition-topology/runs/manifest.json --results experiments/composition-topology/runs/results.jsonl --concurrency 1",
-    "composition:analyze": "node experiments/composition-topology/src/cli.mjs --analyze --manifest experiments/composition-topology/runs/manifest.json --results experiments/composition-topology/runs/results.jsonl --output experiments/composition-topology/reports/latest"
+    "composition:analyze": "node experiments/composition-topology/src/cli.mjs --analyze --manifest experiments/composition-topology/runs/manifest.json --results experiments/composition-topology/runs/results.jsonl --output experiments/composition-topology/reports/latest",
+    "routing:smoke": "node experiments/routing-authority/src/cli.mjs --smoke",
+    "routing:preflight": "node experiments/routing-authority/src/cli.mjs --preflight",
+    "routing:plan": "node experiments/routing-authority/src/cli.mjs --plan experiments/routing-authority/runs/manifest.json",
+    "routing:run": "node experiments/routing-authority/src/cli.mjs --run --manifest experiments/routing-authority/runs/manifest.json --results experiments/routing-authority/runs/results.jsonl --concurrency 1",
+    "routing:analyze": "node experiments/routing-authority/src/cli.mjs --analyze --manifest experiments/routing-authority/runs/manifest.json --results experiments/routing-authority/runs/results.jsonl --output experiments/routing-authority/reports/latest"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "0.84.2",

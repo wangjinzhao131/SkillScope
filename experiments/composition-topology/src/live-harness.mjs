@@ -94,6 +94,7 @@ export async function runCompositionJob(job, environment, options = {}) {
       dependencyDirection: job.family.dependencyDirection,
       repeat: job.repeat,
       condition: job.condition,
+      compositionMode: job.compositionMode ?? job.condition,
       seed: job.seed,
       status,
       startedAt,
@@ -102,6 +103,7 @@ export async function runCompositionJob(job, environment, options = {}) {
       verification,
       parentResult: submitted,
       mainResult: observation.mainData,
+      mainEvidenceRefs: observation.mainEvidenceRefs,
       parentMetrics,
       usage: { parent: parentUsage, main: observation.mainUsage, children: observation.childUsage, tree: treeUsage },
       topology,
@@ -159,7 +161,7 @@ function createWorkflowTool({ job, environment, model, runtime, projectRoot, onO
           question: job.family.question,
           routingCue: job.family.routingCue,
           decisionRule: job.family.decisionRule,
-          compositionMode: job.condition,
+          compositionMode: job.compositionMode ?? job.condition,
           constraintPath: job.packets.constraintPath,
           observationPath: job.packets.observationPath,
         },
@@ -181,6 +183,7 @@ function createWorkflowTool({ job, environment, model, runtime, projectRoot, onO
       const value = {
         parentProjection: JSON.stringify(compact),
         mainData,
+        mainEvidenceRefs: structuredClone(result.evidenceRefs),
         mainUsage: usageFromScope(result.usage),
         childUsage,
         treeUsage: usageFromTree(result.treeUsage, result.usage.wallTimeMs),
@@ -209,24 +212,27 @@ function scopeProjection(scope) {
 }
 
 function auditTopology(job, observation) {
+  const compositionMode = job.compositionMode ?? job.condition;
   const children = observation.scopes.filter((scope) => scope.depth === 1);
   const sameAtomicSkill = children.length === 2 && children.every((scope) => scope.skill === "inspect-contextual-evidence");
   const intervalsOverlap = children.length === 2 && overlap(children[0], children[1]);
-  const expectedFirstRole = job.condition === "PARALLEL_JOIN"
+  const expectedFirstRole = compositionMode === "PARALLEL_JOIN"
     ? "parallel"
-    : job.condition === "CONSTRAINT_FIRST"
+    : compositionMode === "CONSTRAINT_FIRST"
       ? "constraint"
-      : job.condition === "OBSERVATION_FIRST"
+      : compositionMode === "OBSERVATION_FIRST"
         ? "observation"
-        : job.family.dependencyDirection === "observation-first" ? "observation" : "constraint";
+        : compositionMode === "MODEL_ROUTE" && job.family.dependencyDirection === "independent"
+          ? "parallel"
+          : job.family.dependencyDirection === "observation-first" ? "observation" : "constraint";
   const observedFirstRole = observation.mainData?.observedFirstRole;
   const upstreamPassedToSecond = observation.mainData?.upstreamPassedToSecond;
-  const timingValid = job.condition === "PARALLEL_JOIN" ? intervalsOverlap : !intervalsOverlap;
-  const directionValid = job.condition === "ADAPTIVE_ORDER" && job.family.dependencyDirection === "independent"
+  const timingValid = expectedFirstRole === "parallel" ? intervalsOverlap : !intervalsOverlap;
+  const directionValid = compositionMode === "ADAPTIVE_ORDER" && job.family.dependencyDirection === "independent"
     ? ["constraint", "observation"].includes(observedFirstRole)
     : observedFirstRole === expectedFirstRole;
-  const upstreamValid = upstreamPassedToSecond === (job.condition !== "PARALLEL_JOIN");
-  return { expectedFirstRole, observedFirstRole, upstreamPassedToSecond, childIntervalsOverlap: intervalsOverlap, sameAtomicSkill, timingValid, directionValid, upstreamValid, valid: sameAtomicSkill && timingValid && directionValid && upstreamValid };
+  const upstreamValid = upstreamPassedToSecond === (expectedFirstRole !== "parallel");
+  return { compositionMode, expectedFirstRole, observedFirstRole, upstreamPassedToSecond, childIntervalsOverlap: intervalsOverlap, sameAtomicSkill, timingValid, directionValid, upstreamValid, valid: sameAtomicSkill && timingValid && directionValid && upstreamValid };
 }
 
 function overlap(left, right) {
@@ -311,7 +317,7 @@ function measureParentSession(session, sentinel) {
   };
 }
 
-function emptyObservation() { return { parentProjection: "", mainData: undefined, mainUsage: { ...EMPTY_USAGE }, childUsage: { ...EMPTY_USAGE }, treeUsage: { ...EMPTY_USAGE }, scopes: [], error: undefined }; }
+function emptyObservation() { return { parentProjection: "", mainData: undefined, mainEvidenceRefs: [], mainUsage: { ...EMPTY_USAGE }, childUsage: { ...EMPTY_USAGE }, treeUsage: { ...EMPTY_USAGE }, scopes: [], error: undefined }; }
 function usageFromStats(stats, wallTimeMs, scopes = 0) { return { scopes, apiCalls: stats.assistantMessages, inputTokens: stats.tokens.input, outputTokens: stats.tokens.output, cacheReadTokens: stats.tokens.cacheRead, cacheWriteTokens: stats.tokens.cacheWrite, totalTokens: stats.tokens.total, cost: stats.cost, wallTimeMs }; }
 function usageFromScope(scope) { return { scopes: 1, apiCalls: scope.turns, inputTokens: scope.inputTokens, outputTokens: scope.outputTokens, cacheReadTokens: scope.cacheReadTokens, cacheWriteTokens: scope.cacheWriteTokens, totalTokens: scope.totalTokens, cost: scope.cost, wallTimeMs: scope.wallTimeMs }; }
 function usageFromTree(tree, wallTimeMs) { return { scopes: tree.scopes, apiCalls: tree.turns, inputTokens: tree.inputTokens, outputTokens: tree.outputTokens, cacheReadTokens: tree.cacheReadTokens, cacheWriteTokens: tree.cacheWriteTokens, totalTokens: tree.totalTokens, cost: tree.cost, wallTimeMs }; }

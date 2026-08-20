@@ -360,7 +360,7 @@ export class SkillScopeRuntime {
       });
     }
 
-    const completion = backendResult.completion;
+    const completion = bindChildEvidence(backendResult.completion, args.skill, backendResult.childResults);
     const encodedBytes = encoder.encode(JSON.stringify(completion)).byteLength;
     const completionIssues = validateCompletionPayload(completion);
     const dataRequired = completion.status === "SUCCESS" || completion.status === "PARTIAL";
@@ -552,7 +552,7 @@ function fallbackLoadedSkill(name: string): LoadedSkill {
     outputSchema: {},
     allowedTools: [],
     resourcePolicy: { defaultAccessMode: "SEALED", allowedAccessModes: ["SEALED"], allowedOperations: [] },
-    delegationPolicy: { allowedSkills: [], maxChildScopes: 0, maxConcurrency: 1 },
+    delegationPolicy: { allowedSkills: [], maxChildScopes: 0, maxConcurrency: 1, childEvidenceBinding: "model" },
     budget: { maxTurns: 1, maxToolCalls: 1, timeoutMs: 1, maxPromptBytes: 1, maxResultBytes: 1 },
     directory: "",
     instructions: "",
@@ -737,6 +737,21 @@ function validateEvidenceRefs(
     }
   });
   return issues;
+}
+
+function bindChildEvidence(
+  completion: CompletionPayload,
+  skill: LoadedSkill,
+  childResults?: SkillResult[],
+): CompletionPayload {
+  if (skill.delegationPolicy.childEvidenceBinding !== "runtime") return completion;
+  return {
+    ...completion,
+    evidenceRefs: (childResults ?? []).map((child, index) => ({
+      id: `runtime-child-${index + 1}`,
+      resource: `scope://${child.scopeId}`,
+    })),
+  };
 }
 
 function validateRequestedResources(completion: CompletionPayload, skill: LoadedSkill): string[] {

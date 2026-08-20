@@ -58,12 +58,15 @@ function parseSkillSpec(value: unknown, source: string): SkillSpec {
   const allowedAccessModes = requireStringArray(resourcePolicy.allowedAccessModes, "resourcePolicy.allowedAccessModes");
   const allowedOperations = requireStringArray(resourcePolicy.allowedOperations, "resourcePolicy.allowedOperations");
   const delegationPolicy = manifest.delegationPolicy === undefined
-    ? { allowedSkills: [], maxChildScopes: 0, maxConcurrency: 1 }
+    ? { allowedSkills: [], maxChildScopes: 0, maxConcurrency: 1, childEvidenceBinding: "model" as const }
     : parseDelegationPolicy(requireRecord(manifest.delegationPolicy, `${source}#delegationPolicy`));
 
   for (const tool of allowedTools) if (!TOOL_NAMES.has(tool)) throw new SkillRegistryError("INVALID_MANIFEST", `Unsupported allowed tool: ${tool}`);
   for (const mode of allowedAccessModes) if (!ACCESS_MODES.has(mode)) throw new SkillRegistryError("INVALID_MANIFEST", `Unsupported access mode: ${mode}`);
   for (const operation of allowedOperations) if (!OPERATIONS.has(operation)) throw new SkillRegistryError("INVALID_MANIFEST", `Unsupported resource operation: ${operation}`);
+  if (delegationPolicy.childEvidenceBinding === "runtime" && allowedTools.length > 0) {
+    throw new SkillRegistryError("INVALID_MANIFEST", "runtime child evidence binding is only valid for aggregation Skills without direct resource tools");
+  }
 
   const defaultAccessMode = requireString(resourcePolicy.defaultAccessMode, "resourcePolicy.defaultAccessMode");
   if (!allowedAccessModes.includes(defaultAccessMode)) {
@@ -102,6 +105,12 @@ function parseDelegationPolicy(value: Record<string, unknown>): SkillSpec["deleg
   }
   const maxChildScopes = requireNonNegativeInteger(value.maxChildScopes, "delegationPolicy.maxChildScopes");
   const maxConcurrency = requirePositiveInteger(value.maxConcurrency, "delegationPolicy.maxConcurrency");
+  const childEvidenceBinding = value.childEvidenceBinding === undefined
+    ? "model"
+    : requireString(value.childEvidenceBinding, "delegationPolicy.childEvidenceBinding");
+  if (!new Set(["model", "runtime"]).has(childEvidenceBinding)) {
+    throw new SkillRegistryError("INVALID_MANIFEST", "delegationPolicy.childEvidenceBinding must be model or runtime");
+  }
   if (allowedSkills.length === 0 && maxChildScopes !== 0) {
     throw new SkillRegistryError("INVALID_MANIFEST", "maxChildScopes must be 0 when allowedSkills is empty");
   }
@@ -111,7 +120,10 @@ function parseDelegationPolicy(value: Record<string, unknown>): SkillSpec["deleg
   if (maxConcurrency > Math.max(1, maxChildScopes)) {
     throw new SkillRegistryError("INVALID_MANIFEST", "maxConcurrency cannot exceed maxChildScopes");
   }
-  return { allowedSkills, maxChildScopes, maxConcurrency };
+  if (childEvidenceBinding === "runtime" && allowedSkills.length === 0) {
+    throw new SkillRegistryError("INVALID_MANIFEST", "runtime child evidence binding requires at least one allowed child Skill");
+  }
+  return { allowedSkills, maxChildScopes, maxConcurrency, childEvidenceBinding: childEvidenceBinding as "model" | "runtime" };
 }
 
 function assertSupportedSchema(schema: JsonSchema, field: string): void {

@@ -13,6 +13,7 @@
 | [父上下文与嵌套SkillScope实验报告](../../experiments/parent-context/reports/latest/report.md) | 60-trial live结果：父上下文显著下降、正确率持平、当前嵌套实现以更多调用树token和延迟换取上下文隔离 |
 | [SkillScope组合拓扑实验预注册_v1.md](./SkillScope组合拓扑实验预注册_v1.md) | 当前延伸主线：固定同一main/原子Skill和调用数，只改变并行、两个串行方向与自适应typed information flow |
 | [SkillScope组合拓扑实验人工复核](../../experiments/composition-topology/reports/latest/README.md) | 72-job live结果：方向匹配与自适应机制有效，但负对照与provenance稳定性门失败，不能声称普遍稳定性提升 |
+| [SkillScope路由权责实验预注册_v1.md](./SkillScope路由权责实验预注册_v1.md) | 当前后续：固定Runtime自动child-evidence binding，只比较模型路由与作者声明/Runtime侧路由的36-trial配对设计 |
 | [Schema 2 Pilot v1 人工复核](../../experiments/access-frontier/reports/schema2-pilot-v1/README.md) | 70-job 五条件结果、forced-undergrant 机制结果、artifact hashes、失败审阅与严格推断边界 |
 | [High-search-entropy Pilot 人工复核](../../experiments/access-frontier/reports/entropy-frontier-v1/README.md) | 50-job 父搜索句柄、分片导航、调用预算与 planner 结果；含 reporting amendment |
 | [Planner output-budget probe 人工复核](../../experiments/access-frontier/reports/planner-budget-v1/README.md) | 60-trial planner-only 结果；区分 forced-tool 协议完成、catalog 宽度、预算与实际选择性 |
@@ -26,4 +27,4 @@
 | [实验实现独立审计.md](./实验实现独立审计.md) | access-frontier Runner 的历史审计快照；当前结论须结合 R1/v1.3 门禁 |
 | [插件实现独立审计.md](./插件实现独立审计.md) | Pi 插件的窄路径有条件 GO 与生产级 NO-GO 边界 |
 
-原始机器可读 manifest/results 写入 `experiments/access-frontier/runs/` 或各独立 suite 的 `runs/`，审核后的聚合报告写入 `experiments/access-frontier/reports/`。raw runs 默认被 Git 忽略，因为它们包含隐藏 fixture truth 和模型正文。密钥只从环境变量 `EXPERIMENT_KEY` 读取；客户端与结果写盘均须做 secret 回显回归，报告只保留脱敏断言和 artifact hash。
+原始机器可读 manifest/results 写入各实验自己的`runs/`（例如`experiments/access-frontier/runs/`和`experiments/routing-authority/runs/`），审核后的聚合报告写入相应`reports/`。raw runs 默认被 Git 忽略，因为它们包含隐藏 fixture truth 和模型正文。密钥只从环境变量 `EXPERIMENT_KEY` 读取；客户端与结果写盘均须做 secret 回显回归，报告只保留脱敏断言和 artifact hash。

@@ -19,6 +19,9 @@ Follow `compositionMode` exactly:
 - `OBSERVATION_FIRST`: the reverse.
 - `ADAPTIVE_ORDER`: infer from `routingCue` which role can be resolved without
   the other; call it first, then pass its typed result to the other call.
+- `MODEL_ROUTE`: infer the full topology from `routingCue`. Use
+  constraint-first or observation-first for one-way dependencies, and use the
+  parallel batch when the cue says the packets are independent.
 
 Each child input has only `question`, `role`, `path`, and optional `upstream`.
 When present, `upstream` has exactly this shape and no additional keys:
@@ -47,6 +50,6 @@ second child input contained the first typed result.
 Call `scope_complete` alone on a later turn. When both children are resolved,
 use status `SUCCESS`; when either is ambiguous, use status `PARTIAL` with the
 required data fields and `ABSTAIN`. In both cases omit `requestedResources`
-entirely: the fixed-call experiment does not allow repair or more context. Cite
-both child results with `scope://<child scopeId>`. Never copy child messages,
-packet text, candidates, work logs, or sentinels.
+entirely and submit `evidenceRefs: []`: Runtime binds canonical evidence for the
+actual child results. Never copy scope IDs, child messages, packet text,
+candidates, work logs, or sentinels.

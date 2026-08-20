@@ -16,4 +16,5 @@ experiments/access-frontier/entropy-frontier/runs/
 experiments/access-frontier/resource-set-holdout/runs/
 experiments/parent-context/runs/
 experiments/composition-topology/runs/
+experiments/routing-authority/runs/
 *.corrupt-tail-*

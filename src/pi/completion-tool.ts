@@ -23,6 +23,7 @@ export interface CompletionAttemptDecision {
 
 export interface CompletionToolOptions {
   beforeAccept?: (toolCallId: string, payload: CompletionPayload) => CompletionAttemptDecision;
+  runtimeBindsChildEvidence?: boolean;
 }
 
 interface CompletionToolDetails {
@@ -77,6 +78,9 @@ export function createCompletionTool(
       "Call scope_complete exactly once as the final action for every scoped skill, including NEED_CONTEXT or BLOCKED outcomes.",
       "NEED_CONTEXT requires a non-empty requestedResources list; omit requestedResources for SUCCESS, PARTIAL, and BLOCKED.",
       "Every evidenceIds string nested in data must name an id present in top-level evidenceRefs.",
+      ...(options.runtimeBindsChildEvidence
+        ? ["Set evidenceRefs to []; Runtime will replace them with canonical refs for the child results actually produced by this Scope."]
+        : []),
       "Never invent runtime metadata such as scopeId, traceId, token usage, timestamps, or skill version.",
     ],
     parameters: schema,

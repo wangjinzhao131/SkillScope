@@ -232,6 +232,50 @@ test("evidence must be visible in the ledger captured before completion", async 
   assert.equal(accepted.status, "SUCCESS");
 });
 
+test("Runtime-owned child evidence replaces model locators with actual child results", async (t) => {
+  const root = await fixture(t);
+  const manifestPath = join(root.skills, "test-skill", "scope.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  manifest.allowedTools = [];
+  manifest.delegationPolicy = {
+    allowedSkills: ["leaf-skill"],
+    maxChildScopes: 2,
+    maxConcurrency: 2,
+    childEvidenceBinding: "runtime",
+  };
+  await writeFile(manifestPath, JSON.stringify(manifest));
+  const children = [childResult("scope-real-a"), childResult("scope-real-b")];
+  const runtime = new SkillScopeRuntime({
+    registry: new SkillRegistry(root.skills),
+    backend: {
+      async run() {
+        return {
+          completion: {
+            status: "SUCCESS",
+            summary: "Aggregated actual child results.",
+            data: { answer: "alpha" },
+            evidenceRefs: [{ id: "invented", resource: "scope://not-a-real-child" }],
+          },
+          childResults: children,
+          usage: usage(2),
+          terminationReason: "completed",
+        };
+      },
+    },
+    traceStore: new TraceStore(root.traces),
+  });
+  const result = await runtime.invoke(
+    { skill: "test-skill", input: { question: "q" }, accessMode: "SEALED" },
+    { cwd: root.project, parentSessionId: "p" },
+  );
+  assert.equal(result.status, "SUCCESS");
+  assert.deepEqual(result.evidenceRefs, [
+    { id: "runtime-child-1", resource: "scope://scope-real-a" },
+    { id: "runtime-child-2", resource: "scope://scope-real-b" },
+  ]);
+  assert.equal(JSON.stringify(result).includes("not-a-real-child"), false);
+});
+
 test("skill manifests fail closed on unsupported JSON Schema keywords", async (t) => {
   const root = await fixture(t);
   const manifestPath = join(root.skills, "test-skill", "scope.json");
@@ -363,4 +407,29 @@ async function fixture(t) {
 
 function usage(totalTokens) {
   return { turns: 1, toolCalls: 0, inputTokens: totalTokens - 1, outputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens, cost: 0 };
+}
+
+function childResult(scopeId) {
+  return {
+    schemaVersion: "1.1",
+    scopeId,
+    invocationId: `invocation-${scopeId}`,
+    parentSessionId: "p",
+    parentScopeId: "parent-scope",
+    rootScopeId: "parent-scope",
+    depth: 1,
+    skill: { name: "leaf-skill", version: "1.0.0" },
+    status: "SUCCESS",
+    summary: "leaf",
+    data: { answer: "alpha" },
+    evidenceRefs: [],
+    requestedResources: [],
+    warnings: [],
+    usage: { ...usage(1), wallTimeMs: 1 },
+    treeUsage: { scopes: 1, turns: 1, toolCalls: 0, inputTokens: 0, outputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 1, cost: 0 },
+    childScopes: [],
+    traceId: scopeId,
+    startedAt: "2026-08-20T00:00:00.000Z",
+    endedAt: "2026-08-20T00:00:00.001Z",
+  };
 }

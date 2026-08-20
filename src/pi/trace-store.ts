@@ -217,6 +217,7 @@ function projectManifest(value: unknown): Record<string, unknown> {
     }
     copyInteger(delegation, projectedDelegation, "maxChildScopes");
     copyInteger(delegation, projectedDelegation, "maxConcurrency");
+    copyString(delegation, projectedDelegation, "childEvidenceBinding");
     if (Object.keys(projectedDelegation).length > 0) projected.delegationPolicy = projectedDelegation;
   }
   if (Object.hasOwn(source, "input")) {

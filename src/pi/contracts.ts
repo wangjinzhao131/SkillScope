@@ -55,6 +55,8 @@ export interface SkillSpec {
     allowedSkills: string[];
     maxChildScopes: number;
     maxConcurrency: number;
+    /** Who owns top-level evidence refs for aggregation Skills. */
+    childEvidenceBinding: "model" | "runtime";
   };
   budget: SkillBudget;
 }
