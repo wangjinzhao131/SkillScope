@@ -28,8 +28,8 @@
 | 条件 | Scope 拓扑 | 第二个原子 Skill 是否收到第一个 typed result |
 | --- | --- | --- |
 | `PARALLEL_JOIN` | constraint 与 observation 在同一 tool batch 并行，随后 main 汇总 | 否 |
-| `CONSTRAINT_FIRST` | constraint → observation → main | 是 |
-| `OBSERVATION_FIRST` | observation → constraint → main | 是 |
+| `CONSTRAINT_FIRST` | constraint → observation → main | 是，即使第一个结果为`AMBIGUOUS`也必须传递四字段投影 |
+| `OBSERVATION_FIRST` | observation → constraint → main | 是，即使第一个结果为`AMBIGUOUS`也必须传递四字段投影 |
 | `ADAPTIVE_ORDER` | main 只根据公开问题与 routing cue 选择上述两个串行方向 | 是 |
 
 `ADAPTIVE_ORDER` 不增加 router Scope，也不增加叶子调用；选择由已经存在的 main Skill 完成。它必须在方向依赖任务中先调用可以独立解析的 packet。独立对照任务允许任一串行方向。
@@ -72,6 +72,8 @@ main Skill 的 Runtime-valid data 固定包含：
 父 Agent 在所有条件都只能看到 main 的 compact result，并通过同一个严格 `parent_complete` 提交决定、两个 fact 与初始 memory code。
 
 `Parent Hard Pass` 要求 decision、两个 fact、memory code 全部精确正确，main 和两个 child 都是 Runtime-valid `SUCCESS`，拓扑与条件相符，所有 Scope dispose。合法 `ABSTAIN` 是 schema pass 但不是 Hard Pass；错误的 `ALLOW/BLOCK` 另计 confident-wrong。
+
+固定调用实验不允许任何条件请求更多资源或修复运行：两结果都resolved时main用`SUCCESS`；任一ambiguous时用`PARTIAL`加完整data与`ABSTAIN`，并省略`requestedResources`。这只是把冻结协议写成可执行形状，不改变处理因素或答案规则。
 
 ## 6. 主要指标与预定分析
 

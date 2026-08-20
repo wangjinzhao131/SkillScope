@@ -32,6 +32,11 @@ or the same four fields with role `observation`. Never copy `upstreamPassed`,
 field into `input.upstream`. Do not pass the decision rule, routing cue, other
 path, or invented fields.
 
+For every non-parallel mode, always make the second call and always include the
+four-field `upstream`, even when the first result is `AMBIGUOUS` with
+`UNKNOWN` values. Do not optimize away the edge, retry the first role, swap the
+frozen order, or request more resources.
+
 After both results are visible, apply `decisionRule` exactly. If either result is
 not `SUCCESS` or its data is not `RESOLVED`, return `ABSTAIN` and use `UNKNOWN`
 for the unresolved fact. Otherwise return both exact values and `ALLOW` or
@@ -39,6 +44,9 @@ for the unresolved fact. Otherwise return both exact values and `ALLOW` or
 to the role actually called first; set `upstreamPassedToSecond` to whether the
 second child input contained the first typed result.
 
-Call `scope_complete` alone on a later turn. Cite both child results with
-`scope://<child scopeId>`. Never copy child messages, packet text, candidates,
-work logs, or sentinels.
+Call `scope_complete` alone on a later turn. When both children are resolved,
+use status `SUCCESS`; when either is ambiguous, use status `PARTIAL` with the
+required data fields and `ABSTAIN`. In both cases omit `requestedResources`
+entirely: the fixed-call experiment does not allow repair or more context. Cite
+both child results with `scope://<child scopeId>`. Never copy child messages,
+packet text, candidates, work logs, or sentinels.
