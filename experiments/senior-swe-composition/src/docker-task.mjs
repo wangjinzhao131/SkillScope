@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 
 const MAX_TOOL_OUTPUT_BYTES = 64 * 1024;
 
@@ -131,9 +131,12 @@ export async function runNativeVerifier({ image, repoPath, taskRoot, patchPath, 
       if (solved.exitCode !== 0) throw new Error(`gold patch failed to apply: ${solved.stderr}`);
     }
     await run("docker", ["cp", join(taskRoot, "tests"), `${id}:/tests`]);
+    const repoName = basename(repoPath);
+    if (!/^[A-Za-z0-9_.-]+$/u.test(repoName)) throw new Error("repoPath basename is not safe for REPO_NAME");
     const command = [
       "set -euo pipefail",
       "mkdir -p /logs/verifier",
+      `export REPO_NAME=${repoName}`,
       "source /tests/test-setup.sh",
       "python3 /tests/run_verify.py",
     ].join("\n");
