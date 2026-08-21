@@ -18,6 +18,7 @@
 | [Senior SWE真实任务Skill组合实验预注册_v1.md](./SeniorSWE真实任务Skill组合实验预注册_v1.md) | 当前真实任务主线：固定Senior SWE-Bench v2026.06.2，比较Inline、单worker和main＋四个独立销毁leaf对父上下文与长程稳定性的影响 |
 | [Senior SWE真实任务Skill组合实验预注册_v2.md](./SeniorSWE真实任务Skill组合实验预注册_v2.md) | 基于真实preflight修订：修正completion契约，冻结通过断网gold/no-op门的Better Auth＋Electric六个task-arm |
 | [Senior SWE prepilot v2结果](../../experiments/senior-swe-composition/reports/prepilot-v2/README.md) | 六个真实task-arm的可复现实验记录：隔离有效，但6/6未提交首个typed checkpoint，正式实验不放行 |
+| [Senior SWE结构化收口能力预注册_v3.md](./SeniorSWE结构化收口能力预注册_v3.md) | v2失败后的最小能力门：Runtime收窄为completion-only，先用Electric逐级验证首阶段、完整Composed及三臂可比性 |
 | [Schema 2 Pilot v1 人工复核](../../experiments/access-frontier/reports/schema2-pilot-v1/README.md) | 70-job 五条件结果、forced-undergrant 机制结果、artifact hashes、失败审阅与严格推断边界 |
 | [High-search-entropy Pilot 人工复核](../../experiments/access-frontier/reports/entropy-frontier-v1/README.md) | 50-job 父搜索句柄、分片导航、调用预算与 planner 结果；含 reporting amendment |
 | [Planner output-budget probe 人工复核](../../experiments/access-frontier/reports/planner-budget-v1/README.md) | 60-trial planner-only 结果；区分 forced-tool 协议完成、catalog 宽度、预算与实际选择性 |

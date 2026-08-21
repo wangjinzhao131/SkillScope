@@ -17,7 +17,7 @@ import {
 import { Type } from "typebox";
 
 import { DockerTaskRuntime, runNativeVerifier } from "./docker-task.mjs";
-import { ARMS, STAGES } from "./protocol.mjs";
+import { ARMS, DEFAULT_STAGE_BUDGET, RUNTIME_CHECKPOINT_BUDGET, STAGES } from "./protocol.mjs";
 
 export const LIVE_MODEL = Object.freeze({
   provider: "opencode-go",
@@ -66,6 +66,7 @@ export async function runSeniorLiveJob(job, environment) {
   });
   const sessions = [];
   const stageResults = [];
+  const stageProtocols = [];
   const contextTraces = [];
   const scopes = [];
   const sentinels = [];
@@ -74,6 +75,8 @@ export async function runSeniorLiveJob(job, environment) {
   let failure;
   let persistent;
   const deadline = Date.now() + (job.timeoutMs ?? 45 * 60_000);
+  const plannedStages = STAGES.slice(0, job.stageLimit ?? STAGES.length);
+  const capabilityPreflight = plannedStages.length < STAGES.length;
 
   try {
     if (job.arm !== ARMS.COMPOSED) {
@@ -90,7 +93,7 @@ export async function runSeniorLiveJob(job, environment) {
       scopes.push(scopeStart("composed-main", 0));
     }
 
-    for (const stageName of STAGES) {
+    for (const stageName of plannedStages) {
       const priorPatch = stageName === "review" || stageName === "repair" ? finalPatch?.path : undefined;
       const workspace = await docker.createStage({ inputPatchPath: priorPatch });
       const leafScope = job.arm === ARMS.COMPOSED ? scopeStart(`${stageName}-leaf`, 1) : null;
@@ -114,13 +117,16 @@ export async function runSeniorLiveJob(job, environment) {
         }
         const remainingMs = deadline - Date.now();
         if (remainingMs <= 0) throw codedError("TASK_ARM_TIMEOUT", "task-arm wall-clock budget exhausted");
-        const stageResult = await worker.runStage({
+        const stageTimeoutMs = Math.min(remainingMs, DEFAULT_STAGE_BUDGET.timeoutMs);
+        const stageExecution = await worker.runStage({
           stageName,
           workspace,
           instruction: job.instruction,
           priorResults: structuredClone(stageResults),
-          timeoutMs: remainingMs,
+          timeoutMs: stageTimeoutMs,
         });
+        const stageResult = stageExecution.result;
+        stageProtocols.push(stageExecution.protocol);
         if (["implement", "repair"].includes(stageName)) {
           const patch = await docker.exportPatch(workspace.containerId, `${job.taskId}-${job.arm}-${stageName}`);
           if (patch.artifactBytes === 0) throw codedError("EMPTY_PATCH", `${stageName} produced an empty patch`);
@@ -144,15 +150,17 @@ export async function runSeniorLiveJob(job, environment) {
       if (job.arm === ARMS.FLAT) scopeDispose(scopes.find((scope) => scope.name === "flat-worker"), "SUCCESS");
     }
     if (job.arm === ARMS.COMPOSED) scopeDispose(scopes.find((scope) => scope.name === "composed-main"), "SUCCESS");
-    const lifecycleBeforeVerifier = lifecycleProjection(job.arm, scopes, docker.lifecycle());
+    const lifecycleBeforeVerifier = lifecycleProjection(job.arm, scopes, docker.lifecycle(), plannedStages.length);
     if (!lifecycleBeforeVerifier.valid) throw codedError("LIFECYCLE_INVALID", "not every disposable scope/workspace was destroyed before verification");
-    nativeVerifier = await runNativeVerifier({
-      image: job.verifierImage ?? job.image,
-      repoPath: job.repoPath,
-      taskRoot: job.taskRoot,
-      patchPath: finalPatch.path,
-      timeoutMs: job.verifierTimeoutMs ?? 15 * 60_000,
-    });
+    if (!capabilityPreflight) {
+      nativeVerifier = await runNativeVerifier({
+        image: job.verifierImage ?? job.image,
+        repoPath: job.repoPath,
+        taskRoot: job.taskRoot,
+        patchPath: finalPatch.path,
+        timeoutMs: job.verifierTimeoutMs ?? 15 * 60_000,
+      });
+    }
   } catch (error) {
     failure = sanitizeError(error, environment.apiKey);
   } finally {
@@ -172,18 +180,21 @@ export async function runSeniorLiveJob(job, environment) {
   const coordinatorTraces = job.arm === ARMS.COMPOSED
     ? typedCoordinatorTrace(stageResults)
     : contextTraces.filter((trace) => trace.sessionLabel === (job.arm === ARMS.INLINE ? "inline-root" : "flat-worker"));
-  const lifecycle = lifecycleProjection(job.arm, scopes, docker.lifecycle());
+  const lifecycle = lifecycleProjection(job.arm, scopes, docker.lifecycle(), plannedStages.length);
   const record = {
-    schemaVersion: "skillscope.senior-swe.live-result.v1",
+    schemaVersion: "skillscope.senior-swe.live-result.v2",
     taskId: job.taskId,
     arm: job.arm,
     seed: job.seed,
     model: LIVE_MODEL,
-    status: !failure && nativeVerifier?.infrastructureValid ? "completed" : failure ? "capability_failure" : "infrastructure_failure",
+    status: !failure && (capabilityPreflight || nativeVerifier?.infrastructureValid) ? "completed" : failure ? "capability_failure" : "infrastructure_failure",
     startedAt,
     endedAt: new Date().toISOString(),
     wallTimeMs: Number(process.hrtime.bigint() - startedNs) / 1e6,
+    capabilityPreflight,
+    plannedStages,
     stages: stageResults,
+    stageProtocols,
     finalArtifact: finalPatch ? patchMetadata(finalPatch) : null,
     nativeVerifier: nativeVerifier ?? null,
     context: {
@@ -208,7 +219,16 @@ export async function runSeniorLiveJob(job, environment) {
 }
 
 async function createWorkerSession({ environment, model, docker, label, sentinel, contextTraces }) {
-  const state = { stageName: null, workspace: null, completion: null, turnsAtStageStart: 0, stageToolCalls: 0 };
+  const state = {
+    stageName: null,
+    workspace: null,
+    completion: null,
+    turnsAtPhaseStart: 0,
+    phase: "idle",
+    phaseMaxTurns: DEFAULT_STAGE_BUDGET.maxTurns,
+    phaseToolCalls: 0,
+    phaseMaxToolCalls: DEFAULT_STAGE_BUDGET.maxToolCalls,
+  };
   const tools = createTools(state, docker);
   const settingsManager = SettingsManager.inMemory({ compaction: { enabled: false }, retry: { enabled: true, maxRetries: 1 } });
   const { session } = await createAgentSession({
@@ -240,7 +260,7 @@ async function createWorkerSession({ environment, model, docker, label, sentinel
         toolResultBytes: visible.filter((message) => message.role === "toolResult")
           .reduce((sum, message) => sum + Buffer.byteLength(JSON.stringify(message.content)), 0),
       });
-      if (turns - state.turnsAtStageStart > 40) void session.abort();
+      if (turns - state.turnsAtPhaseStart > state.phaseMaxTurns) void session.abort();
     }
   });
   return {
@@ -248,16 +268,46 @@ async function createWorkerSession({ environment, model, docker, label, sentinel
       state.stageName = stageName;
       state.workspace = workspace;
       state.completion = null;
-      state.turnsAtStageStart = turns;
-      state.stageToolCalls = 0;
-      const timer = setTimeout(() => void session.abort(), timeoutMs);
+      beginPhase(state, "work", turns, DEFAULT_STAGE_BUDGET.maxTurns, DEFAULT_STAGE_BUDGET.maxToolCalls);
+      session.setActiveToolsByName(activeToolsForStage(stageName));
+      const stageStartedAt = Date.now();
+      const workTimeoutMs = Math.max(1, timeoutMs - RUNTIME_CHECKPOINT_BUDGET.timeoutMs);
+      const timer = setTimeout(() => void session.abort(), workTimeoutMs);
       let promptError;
       try { await session.prompt(buildStagePrompt({ stageName, instruction, priorResults }), { expandPromptTemplates: false }); }
       catch (error) { promptError = error; }
       finally { clearTimeout(timer); }
       if (promptError) throw codedError("MODEL_OR_SESSION_ERROR", promptError.message ?? String(promptError));
+      const workTurns = turns - state.turnsAtPhaseStart;
+      let checkpointPrompted = false;
+      let checkpointTurns = 0;
+      if (!state.completion) {
+        checkpointPrompted = true;
+        beginPhase(state, "checkpoint", turns, RUNTIME_CHECKPOINT_BUDGET.maxTurns, RUNTIME_CHECKPOINT_BUDGET.maxToolCalls);
+        session.setActiveToolsByName([`${stageName}_complete`]);
+        const remainingMs = timeoutMs - (Date.now() - stageStartedAt);
+        if (remainingMs <= 0) throw codedError("STAGE_TIMEOUT", `${stageName} exhausted its wall-clock budget before Runtime checkpoint`);
+        const checkpointTimer = setTimeout(
+          () => void session.abort(),
+          Math.min(remainingMs, RUNTIME_CHECKPOINT_BUDGET.timeoutMs),
+        );
+        let checkpointError;
+        try { await session.prompt(buildRuntimeCheckpointPrompt(stageName), { expandPromptTemplates: false }); }
+        catch (error) { checkpointError = error; }
+        finally { clearTimeout(checkpointTimer); }
+        if (checkpointError) throw codedError("MODEL_OR_SESSION_ERROR", checkpointError.message ?? String(checkpointError));
+        checkpointTurns = turns - state.turnsAtPhaseStart;
+      }
       if (!state.completion) throw codedError("MISSING_STAGE_COMPLETE", `${stageName} ended without Runtime-valid completion`);
-      return structuredClone(state.completion);
+      return {
+        result: structuredClone(state.completion),
+        protocol: {
+          stage: stageName,
+          completionMode: checkpointPrompted ? "RUNTIME_CHECKPOINT" : "WORK_PHASE",
+          workTurns,
+          checkpointTurns,
+        },
+      };
     },
     usage() { return cachedUsage ?? usageFromStats(session.getSessionStats()); },
     dispose() {
@@ -299,6 +349,15 @@ function createTools(state, docker) {
     },
   });
   return [execTool, patchTool, ...completionTools(state)];
+}
+
+export function activeToolsForStage(stageName) {
+  if (!STAGES.includes(stageName)) throw new Error(`unknown stage ${stageName}`);
+  return [
+    "container_exec",
+    ...(["implement", "repair"].includes(stageName) ? ["container_apply_patch"] : []),
+    `${stageName}_complete`,
+  ];
 }
 
 function completionTools(state) {
@@ -372,6 +431,16 @@ export function buildStagePrompt({ stageName, instruction, priorResults }) {
   ].join("\n\n");
 }
 
+export function buildRuntimeCheckpointPrompt(stageName) {
+  if (!STAGES.includes(stageName)) throw new Error(`unknown stage ${stageName}`);
+  return [
+    `RUNTIME CHECKPOINT: the ${stageName} work phase is closed.`,
+    `The Runtime has disabled every tool except ${stageName}_complete.`,
+    "Use only evidence already present in this session. Do not request more repository work and do not answer in prose.",
+    `Call ${stageName}_complete exactly once now with the required structured fields.`,
+  ].join("\n\n");
+}
+
 function compactRootProjection(job, stages, patch, failure) {
   return {
     taskId: job.taskId,
@@ -400,8 +469,8 @@ function scopeDispose(scope, status) {
   scope.status = status;
   scope.endedAt = new Date().toISOString();
 }
-function lifecycleProjection(arm, scopes, dockerLifecycle) {
-  const expected = arm === ARMS.INLINE ? 0 : arm === ARMS.FLAT ? 1 : 5;
+function lifecycleProjection(arm, scopes, dockerLifecycle, plannedStageCount = STAGES.length) {
+  const expected = arm === ARMS.INLINE ? 0 : arm === ARMS.FLAT ? 1 : 1 + plannedStageCount;
   const started = scopes.length;
   const disposed = scopes.filter((scope) => scope.endedAt).length;
   return { expectedScopes: expected, startedScopes: started, disposedScopes: disposed, activeScopes: started - disposed, activeContainers: dockerLifecycle.activeCount, valid: started === expected && disposed === expected && dockerLifecycle.activeCount === 0 };
@@ -445,11 +514,23 @@ function assertJob(job) {
   if (!job || !Object.values(ARMS).includes(job.arm)) throw new Error("job.arm must be one frozen experiment arm");
   for (const field of ["taskId", "image", "repoPath", "taskRoot", "instruction"]) if (!job[field]) throw new Error(`job.${field} is required`);
   if (!Number.isSafeInteger(job.seed)) throw new Error("job.seed must be an integer");
+  if (job.stageLimit !== undefined && (!Number.isSafeInteger(job.stageLimit) || job.stageLimit < 1 || job.stageLimit > STAGES.length)) {
+    throw new Error(`job.stageLimit must be 1..${STAGES.length}`);
+  }
 }
 function codedError(code, message) { const error = new Error(message); error.code = code; return error; }
 function consumeToolCall(state) {
-  state.stageToolCalls += 1;
-  if (state.stageToolCalls > 40) throw codedError("MAX_TOOL_CALLS", "stage exceeded 40 tool calls");
+  state.phaseToolCalls += 1;
+  if (state.phaseToolCalls > state.phaseMaxToolCalls) {
+    throw codedError("MAX_TOOL_CALLS", `${state.phase} exceeded ${state.phaseMaxToolCalls} tool calls`);
+  }
+}
+function beginPhase(state, phase, turns, maxTurns, maxToolCalls) {
+  state.phase = phase;
+  state.turnsAtPhaseStart = turns;
+  state.phaseMaxTurns = maxTurns;
+  state.phaseToolCalls = 0;
+  state.phaseMaxToolCalls = maxToolCalls;
 }
 function sanitizeError(error, secret) {
   let message = error instanceof Error ? error.message : String(error);

@@ -1,4 +1,4 @@
-export const PROTOCOL_VERSION = "senior-swe-composition.scripted.v2";
+export const PROTOCOL_VERSION = "senior-swe-composition.scripted.v3";
 
 export const CONDITIONS = Object.freeze([
   "INLINE_PERSISTENT",
@@ -24,6 +24,12 @@ export const DEFAULT_STAGE_BUDGET = Object.freeze({
   maxToolCalls: 40,
   timeoutMs: 600_000,
   maxResultBytes: 32_768,
+});
+
+export const RUNTIME_CHECKPOINT_BUDGET = Object.freeze({
+  maxTurns: 4,
+  maxToolCalls: 1,
+  timeoutMs: 120_000,
 });
 
 export function normalizeStageBudget(value = DEFAULT_STAGE_BUDGET) {

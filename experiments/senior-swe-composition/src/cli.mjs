@@ -48,6 +48,7 @@ if (args.mode === "qualify") {
       instruction: await readFile(join(taskRoot, "instruction.md"), "utf8"),
       artifactRoot: args["artifact-root"] ? resolve(args["artifact-root"]) : undefined,
       keepArtifacts: Boolean(args["artifact-root"]),
+      stageLimit: args["stage-limit"] ? Number(args["stage-limit"]) : undefined,
     }, environment);
     await emit(result, args.output);
   } finally {
