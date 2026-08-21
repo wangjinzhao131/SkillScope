@@ -278,7 +278,7 @@ async function createWorkerSession({ environment, model, docker, label, sentinel
       catch (error) { promptError = error; }
       finally { clearTimeout(timer); }
       if (promptError) throw codedError("MODEL_OR_SESSION_ERROR", promptError.message ?? String(promptError));
-      const workTurns = turns - state.turnsAtPhaseStart;
+      const workTurnTelemetry = boundedTurnTelemetry(turns - state.turnsAtPhaseStart, DEFAULT_STAGE_BUDGET.maxTurns);
       let checkpointPrompted = false;
       let checkpointTurns = 0;
       if (!state.completion) {
@@ -298,14 +298,19 @@ async function createWorkerSession({ environment, model, docker, label, sentinel
         if (checkpointError) throw codedError("MODEL_OR_SESSION_ERROR", checkpointError.message ?? String(checkpointError));
         checkpointTurns = turns - state.turnsAtPhaseStart;
       }
+      const checkpointTurnTelemetry = boundedTurnTelemetry(checkpointTurns, RUNTIME_CHECKPOINT_BUDGET.maxTurns);
       if (!state.completion) throw codedError("MISSING_STAGE_COMPLETE", `${stageName} ended without Runtime-valid completion`);
       return {
         result: structuredClone(state.completion),
         protocol: {
           stage: stageName,
           completionMode: checkpointPrompted ? "RUNTIME_CHECKPOINT" : "WORK_PHASE",
-          workTurns,
-          checkpointTurns,
+          workTurns: workTurnTelemetry.completedTurns,
+          workTurnStarts: workTurnTelemetry.turnStarts,
+          workTurnLimitTriggered: workTurnTelemetry.limitTriggered,
+          checkpointTurns: checkpointTurnTelemetry.completedTurns,
+          checkpointTurnStarts: checkpointTurnTelemetry.turnStarts,
+          checkpointTurnLimitTriggered: checkpointTurnTelemetry.limitTriggered,
         },
       };
     },
@@ -439,6 +444,16 @@ export function buildRuntimeCheckpointPrompt(stageName) {
     "Use only evidence already present in this session. Do not request more repository work and do not answer in prose.",
     `Call ${stageName}_complete exactly once now with the required structured fields.`,
   ].join("\n\n");
+}
+
+export function boundedTurnTelemetry(turnStarts, maximumCompletedTurns) {
+  if (!Number.isSafeInteger(turnStarts) || turnStarts < 0) throw new Error("turnStarts must be a non-negative integer");
+  if (!Number.isSafeInteger(maximumCompletedTurns) || maximumCompletedTurns < 1) throw new Error("maximumCompletedTurns must be positive");
+  return {
+    completedTurns: Math.min(turnStarts, maximumCompletedTurns),
+    turnStarts,
+    limitTriggered: turnStarts > maximumCompletedTurns,
+  };
 }
 
 function compactRootProjection(job, stages, patch, failure) {

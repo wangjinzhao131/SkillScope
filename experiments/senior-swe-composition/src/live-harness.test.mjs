@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { activeToolsForStage, buildRuntimeCheckpointPrompt, buildStagePrompt } from "./live-harness.mjs";
+import {
+  activeToolsForStage,
+  boundedTurnTelemetry,
+  buildRuntimeCheckpointPrompt,
+  buildStagePrompt,
+} from "./live-harness.mjs";
 
 test("stage prompt does not forbid its required Runtime completion tool", () => {
   const prompt = buildStagePrompt({
@@ -23,4 +28,17 @@ test("Runtime checkpoint exposes only the current typed completion tool", () => 
   assert.match(prompt, /evidence already present in this session/u);
   assert.doesNotMatch(prompt, /container_exec|container_apply_patch/u);
   assert.throws(() => buildRuntimeCheckpointPrompt("unknown"), /unknown stage/u);
+});
+
+test("turn telemetry separates a completed budget from the aborted boundary turn", () => {
+  assert.deepEqual(boundedTurnTelemetry(41, 40), {
+    completedTurns: 40,
+    turnStarts: 41,
+    limitTriggered: true,
+  });
+  assert.deepEqual(boundedTurnTelemetry(12, 40), {
+    completedTurns: 12,
+    turnStarts: 12,
+    limitTriggered: false,
+  });
 });
