@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "skillscope.senior-swe.prepilot-manifest.v2",
+  "protocolVersion": "senior-swe-composition.scripted.v2",
+  "implementationCommit": "08136cb32a0c7da98acfd2f0cfdde2ad23c901e2",
+  "implementationDirty": false,
+  "dataset": {
+    "repository": "https://github.com/snorkel-ai/senior-swe-bench-v2026.06.git",
+    "version": "v2026.06.2",
+    "commit": "1212f23a662d2e8d3f321b174735a80be1fdf2e2"
+  },
+  "model": {
+    "provider": "opencode-go",
+    "id": "deepseek-v4-flash",
+    "api": "openai-completions",
+    "baseUrl": "https://opencode.ai/zen/go/v1",
+    "temperature": 0
+  },
+  "pairedSeed": 20260822,
+  "stageOrder": ["investigate", "implement", "review", "repair"],
+  "stageBudget": {
+    "maxTurns": 40,
+    "maxToolCalls": 40,
+    "timeoutMs": 600000,
+    "maxResultBytes": 32768,
+    "taskArmTimeoutMs": 2700000
+  },
+  "sourceHashes": {
+    "liveHarnessSha256": "2f674ca983cace3258cef7efce0cbb55d9fd4636e97a5023048238366bb89d4a",
+    "protocolSha256": "a447c53fbb312e75c44f93717dc5d837bb4939ba9d2126563ac95093ef76ec77",
+    "selectorSha256": "55a978e93e42b6b9dade79d6a4871756ecfa20fb3f7b1929d45d6050f4fce1e3",
+    "environmentPortBuilderSha256": "496cb4262a552bf7e59914fb93307c952dc4f0871f01dd99e235a9f155396877",
+    "verifierImageBuilderSha256": "73b13b3b89dd89ca1566a6b86af4425121fda79cb49922ecfdffd84386c5610e",
+    "preregistrationSha256": "f42751be9662e4a1d2a20e2f07781cf75eebf3373db8652fdbd250eb254cc0ea"
+  },
+  "tasks": {
+    "better-auth-fix-api-key-run": {
+      "repo": "better-auth",
+      "language": "typescript",
+      "repoPath": "/repo/better-auth",
+      "instructionSha256": "701c91d64c6fae0b8d2591984c0c535987b0225dbcef9db61211bc82b37e88f9",
+      "environmentClass": "ENV_BUILD_PORT",
+      "solverImage": "skillscope-senior:better-auth-fix-api-key-run-port",
+      "solverImageId": "sha256:c224353351ecbcbb3b97f9f99c2c37dc571444816c981d471686ad31dafb1a7d",
+      "verifierImage": "skillscope-senior:better-auth-fix-api-key-run-verifier-v2",
+      "verifierImageId": "sha256:1ad75827d8fd5db834132bd786382425dde4b61fe94cdb58e718bcb76d6edf52",
+      "qualification": { "repeats": 3, "noopPassed": 1, "noopTotal": 4, "goldPassed": 4, "goldTotal": 4, "stable": true }
+    },
+    "electric-fix-elixir-client-cache": {
+      "repo": "electric",
+      "language": "elixir",
+      "repoPath": "/repo/electric",
+      "instructionSha256": "701095e6bdbebb386c2ef73e5164f9f6a7b9c40965725e4ab799393dcb40fd92",
+      "environmentClass": "ENV_BUILD_PORT",
+      "solverImage": "skillscope-senior:electric-fix-elixir-client-cache-port",
+      "solverImageId": "sha256:ab6d3b876c8b8a4c7a8e8acaa0efac6b2c0d2e1be010724b2c0c263477cd2edc",
+      "verifierImage": "skillscope-senior:electric-fix-elixir-client-cache-verifier",
+      "verifierImageId": "sha256:6fc9236e3355b85a6fc339f5e2ad0061f9281437558c778f0471525f36124a5b",
+      "qualification": { "repeats": 3, "noopPassed": 1, "noopTotal": 4, "goldPassed": 4, "goldTotal": 4, "stable": true }
+    }
+  },
+  "orderRule": "ascending sha256(skillscope-senior-v2:20260822:<taskId>:<arm>)",
+  "orderHash": "791f774f2974048e9a4a657be520d1a7b0f69834ef045df3f0b8cd32620bac33",
+  "jobs": [
+    { "jobId": "job_6e47213fb065d6c34b11", "taskId": "better-auth-fix-api-key-run", "arm": "INLINE_PERSISTENT", "seed": 20260822, "orderKey": "354abb6293524d261e972fbaf312cdfb0adacb8e883d4910df8643f922709c8d" },
+    { "jobId": "job_00cb1bf818800907c902", "taskId": "electric-fix-elixir-client-cache", "arm": "INLINE_PERSISTENT", "seed": 20260822, "orderKey": "4edb4e0cf78c4b76bf4dff6e4aeb286f79dc0e366e7424d8a52354196fde6379" },
+    { "jobId": "job_33d1090e65568ac5230c", "taskId": "electric-fix-elixir-client-cache", "arm": "FLAT_DISPOSABLE", "seed": 20260822, "orderKey": "8783daa17e2c67ff41290cac957c61e5b201bcd8e45386631b6075a1f89d402c" },
+    { "jobId": "job_81d0eaa2c4b6be05052a", "taskId": "better-auth-fix-api-key-run", "arm": "FLAT_DISPOSABLE", "seed": 20260822, "orderKey": "d28ba9d7ca6ab195952685d677faf2114837e411022790ccae1675dd396358f6" },
+    { "jobId": "job_422cfadcd1b9e9784eaf", "taskId": "electric-fix-elixir-client-cache", "arm": "COMPOSED_DISPOSABLE", "seed": 20260822, "orderKey": "d618794aeec7e4339e7881be4be937dae0e615de6b985909ef70f575432ae49a" },
+    { "jobId": "job_516afc580f79b9942c0e", "taskId": "better-auth-fix-api-key-run", "arm": "COMPOSED_DISPOSABLE", "seed": 20260822, "orderKey": "f9e4d00b078eb71ba1a796c26c8137038681369930478a68065121b5c30feeb6" }
+  ]
+}
