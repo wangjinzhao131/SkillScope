@@ -127,6 +127,20 @@ ARM port 挑战题固定为 `gitea-fix-diff-highlight-overlap`，只验证 port 
 
 本轮已进行一次不产生任务结果的 Gitea ARM 构建探测：基础镜像进入原生 ARM Ubuntu 构建阶段，但首次 apt 下载长时间无进展后被主动取消，没有生成可用任务镜像。这只证明架构基础镜像可启动，**不算 ARM 门通过，也不算模型预实验**。
 
+### 6.2 首次任务模型调用前的环境构建附录
+
+Clean baseline `3bed3e4` 后、任何 gold/no-op 和任务模型结果前，两个固定 prepilot 的未修改 Dockerfile 暴露了可复现的冷构建故障：Better Auth 的 `npm install` 在同一固定 pnpm tarball 上长期低速，耗尽大部分声明 build timeout；PostHog 的 `git fetch --unshallow 2>/dev/null || true` 下载失败后吞掉错误，导致下一步找不到已经固定的 base commit。
+
+为继续验证实验链路，允许新增 `ENV_BUILD_PORT`，但规则比一般 Dockerfile 修改更窄：
+
+- 只能在未修改 Dockerfile 已真实失败或达到声明 build timeout 后启用；
+- 只能改变取得已固定构件的方式，不能改变构件版本、base commit、repo 文件、instruction、solution、verifier 或 tests；
+- 必须断言原 Dockerfile hash与唯一替换点，保存 replacement、派生 hash、image identity 与失败原因；
+- 必须通过同一 gold 3/3、no-op 0/3、非空原生 verifier 和断网重放门；
+- 报告单列为 `ENV_BUILD_PORT`，不得写成 `NATIVE_ARM`，也不得用其绝对构建/执行时延外推官方环境。
+
+两个已冻结 recipe 只做：Better Auth 从与 npm 相同的版本化 URL 直接下载 `pnpm-10.30.2.tgz` 后本地安装；PostHog 只 fetch Dockerfile 下一行已经固定的 `423e9cf...` commit，而不是下载不需要的完整历史。recipe 进入新 clean baseline 后才可运行资格门；若极性门不通过，任务仍为不合格，不继续修补。
+
 ## 7. 模型预实验
 
 在固定正式任务 ID 前，先运行两个永久排除于正式效果矩阵的 prepilot 任务：
