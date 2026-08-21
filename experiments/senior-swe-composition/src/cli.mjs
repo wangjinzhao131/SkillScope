@@ -42,6 +42,7 @@ if (args.mode === "qualify") {
       arm,
       seed: Number(args.seed ?? 20260822),
       image: required(args, "image"),
+      verifierImage: args["verifier-image"],
       repoPath: required(args, "repo-path"),
       taskRoot,
       instruction: await readFile(join(taskRoot, "instruction.md"), "utf8"),
@@ -90,4 +91,3 @@ function parseArgs(argv) {
 }
 function required(argsObject, key) { if (!argsObject[key]) throw new Error(`--${key} is required`); return argsObject[key]; }
 function requiredPath(argsObject, key) { return resolve(required(argsObject, key)); }
-

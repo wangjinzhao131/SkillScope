@@ -125,14 +125,14 @@ export async function runNativeVerifier({ image, repoPath, taskRoot, patchPath, 
   try {
     stage = await runtime.createStage({ inputPatchPath: patchPath });
     const id = stage.containerId;
+    const repoName = basename(repoPath);
+    if (!/^[A-Za-z0-9_.-]+$/u.test(repoName)) throw new Error("repoPath basename is not safe for REPO_NAME");
     if (applyGold) {
       await run("docker", ["cp", join(taskRoot, "solution"), `${id}:/solution`]);
-      const solved = await runtime.exec(id, "bash /solution/solve.sh", { timeoutMs: 120_000 });
+      const solved = await runtime.exec(id, `export REPO_NAME=${repoName}; bash /solution/solve.sh`, { timeoutMs: 120_000 });
       if (solved.exitCode !== 0) throw new Error(`gold patch failed to apply: ${solved.stderr}`);
     }
     await run("docker", ["cp", join(taskRoot, "tests"), `${id}:/tests`]);
-    const repoName = basename(repoPath);
-    if (!/^[A-Za-z0-9_.-]+$/u.test(repoName)) throw new Error("repoPath basename is not safe for REPO_NAME");
     const command = [
       "set -euo pipefail",
       "mkdir -p /logs/verifier",

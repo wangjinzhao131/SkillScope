@@ -147,7 +147,7 @@ export async function runSeniorLiveJob(job, environment) {
     const lifecycleBeforeVerifier = lifecycleProjection(job.arm, scopes, docker.lifecycle());
     if (!lifecycleBeforeVerifier.valid) throw codedError("LIFECYCLE_INVALID", "not every disposable scope/workspace was destroyed before verification");
     nativeVerifier = await runNativeVerifier({
-      image: job.image,
+      image: job.verifierImage ?? job.image,
       repoPath: job.repoPath,
       taskRoot: job.taskRoot,
       patchPath: finalPatch.path,
