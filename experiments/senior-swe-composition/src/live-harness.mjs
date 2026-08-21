@@ -252,7 +252,7 @@ async function createWorkerSession({ environment, model, docker, label, sentinel
       state.stageToolCalls = 0;
       const timer = setTimeout(() => void session.abort(), timeoutMs);
       let promptError;
-      try { await session.prompt(stagePrompt({ stageName, instruction, priorResults }), { expandPromptTemplates: false }); }
+      try { await session.prompt(buildStagePrompt({ stageName, instruction, priorResults }), { expandPromptTemplates: false }); }
       catch (error) { promptError = error; }
       finally { clearTimeout(timer); }
       if (promptError) throw codedError("MODEL_OR_SESSION_ERROR", promptError.message ?? String(promptError));
@@ -352,7 +352,7 @@ function completionTool(state, stageName, parameters) {
   });
 }
 
-function stagePrompt({ stageName, instruction, priorResults }) {
+export function buildStagePrompt({ stageName, instruction, priorResults }) {
   const role = {
     investigate: "Investigate the failure, locate relevant code, reproduce or gather evidence, and propose a concrete repair. Do not edit files.",
     implement: "Implement the diagnosis in the repository, run focused visible tests, and leave the working tree with the proposed fix.",
@@ -363,8 +363,8 @@ function stagePrompt({ stageName, instruction, priorResults }) {
     "You are executing one frozen atomic software-engineering Skill in the SkillScope experiment.",
     `STAGE: ${stageName}`,
     role,
-    "Use only container_exec and container_apply_patch. The container has no network. Do not look for /tests, /solution, oracle patches, benchmark metadata, or hidden evaluators.",
-    "When done, call the matching *_complete tool exactly once. Evidence refs should name commands or repo-relative files/lines you actually inspected.",
+    `Use container_exec for repository work and container_apply_patch only when this stage permits edits. Your only other allowed tool is ${stageName}_complete. The container has no network. Do not look for /tests, /solution, oracle patches, benchmark metadata, or hidden evaluators.`,
+    `Do not end with a prose answer. Your final action must call ${stageName}_complete exactly once; otherwise the Runtime will reject the stage. Evidence refs should name commands or repo-relative files/lines you actually inspected.`,
     "TASK INSTRUCTION:",
     instruction,
     "RUNTIME-VALIDATED PRIOR RESULTS:",

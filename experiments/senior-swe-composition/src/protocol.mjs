@@ -1,4 +1,4 @@
-export const PROTOCOL_VERSION = "senior-swe-composition.scripted.v1";
+export const PROTOCOL_VERSION = "senior-swe-composition.scripted.v2";
 
 export const CONDITIONS = Object.freeze([
   "INLINE_PERSISTENT",

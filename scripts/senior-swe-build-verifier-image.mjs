@@ -7,9 +7,20 @@ const args = parseArgs(process.argv.slice(2));
 const baseImage = required(args, "base-image");
 const targetImage = required(args, "target-image");
 const inspected = JSON.parse((await execFileAsync("docker", ["image", "inspect", baseImage], { encoding: "utf8" })).stdout)[0];
+const dependencies = Object.freeze([
+  "pytest>=7.0,<9.0",
+  "requests>=2.28,<3.0",
+  "jinja2>=3.1,<4.0",
+  "litellm>=1.0,<2.0",
+  "pydantic>=2.0,<3.0",
+  "unidiff>=0.7,<1.0",
+  "pygments>=2.17,<3.0",
+  "ast-grep-py>=0.30,<1.0",
+]);
+const requirementArgs = dependencies.map((value) => `'${value}'`).join(" ");
 const dockerfile = [
   `FROM ${inspected.Id}`,
-  "RUN python3 -m pip install --no-cache-dir 'requests>=2.28,<3.0' 'jinja2>=3.1,<4.0'",
+  `RUN python3 -m pip install --break-system-packages --no-cache-dir ${requirementArgs} || python3 -m pip install --no-cache-dir ${requirementArgs}`,
   "",
 ].join("\n");
 const identity = {
@@ -18,7 +29,7 @@ const identity = {
   baseImageId: inspected.Id,
   targetImage,
   architecture: inspected.Architecture,
-  addedDependencies: ["requests>=2.28,<3.0", "jinja2>=3.1,<4.0"],
+  addedDependencies: dependencies,
   purpose: "public native runner import dependencies declared by upstream tests/test.sh; no tests or solution are embedded",
 };
 process.stderr.write(`${JSON.stringify(identity, null, 2)}\n`);

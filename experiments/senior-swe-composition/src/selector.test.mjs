@@ -4,7 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import {
+  ALL_PREPILOT_TASK_IDS,
   PREPILOT_TASK_IDS,
+  PREPILOT_TASK_IDS_V1,
   SENIOR_SWE_COMMIT,
   assertLeakFree,
   assertPinnedSeniorDataset,
@@ -50,7 +52,7 @@ test("parser rejects a task directory/name mismatch", async () => {
 test("prepilot is exactly the two frozen cross-repo, cross-language tasks", () => {
   const tasks = [
     fakeTask(PREPILOT_TASK_IDS[0], { repo: "better-auth", language: "typescript" }),
-    fakeTask(PREPILOT_TASK_IDS[1], { repo: "posthog", language: "python" }),
+    fakeTask(PREPILOT_TASK_IDS[1], { repo: "electric", language: "elixir" }),
     fakeTask("extra", { repo: "elsewhere", language: "go" }),
   ];
   assert.deepEqual(selectPrepilotTasks(tasks).map((task) => task.id), PREPILOT_TASK_IDS);
@@ -59,7 +61,8 @@ test("prepilot is exactly the two frozen cross-repo, cross-language tasks", () =
 test("formal order freezes before qualification and selection only skips failed candidates", () => {
   const tasks = [
     fakeTask(PREPILOT_TASK_IDS[0], { repo: "better-auth", language: "typescript" }),
-    fakeTask(PREPILOT_TASK_IDS[1], { repo: "posthog", language: "python" }),
+    fakeTask(PREPILOT_TASK_IDS[1], { repo: "electric", language: "elixir" }),
+    fakeTask(PREPILOT_TASK_IDS_V1[1], { repo: "posthog-v1", language: "python" }),
     fakeTask("python-slow", { repo: "repo-a", language: "python", build: 300, verify: 100 }),
     fakeTask("python-fast", { repo: "repo-b", language: "python", build: 10, verify: 10 }),
     fakeTask("go-fast", { repo: "repo-c", language: "go", build: 20, verify: 10 }),
@@ -74,7 +77,7 @@ test("formal order freezes before qualification and selection only skips failed 
   const selected = selectFormalTasks(tasks, { qualifiedTaskIds, count: 3 });
   assert.equal(new Set(selected.map((task) => task.repo)).size, 3);
   assert.equal(new Set(selected.map((task) => task.language)).size, 3);
-  assert.equal(selected.some((task) => PREPILOT_TASK_IDS.includes(task.id)), false);
+  assert.equal(selected.some((task) => ALL_PREPILOT_TASK_IDS.includes(task.id)), false);
   assert.equal(selected.some((task) => task.id === "too-long" || task.id === "wrong-segment"), false);
   assert.deepEqual(selected.map((task) => task.id), ranked.slice(0, 3).map((task) => task.id));
   const withoutFirst = qualifiedTaskIds.filter((id) => id !== ranked[0].id);

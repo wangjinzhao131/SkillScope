@@ -8,11 +8,16 @@ const execFileAsync = promisify(execFile);
 
 export const SENIOR_SWE_REPOSITORY_URL = "https://github.com/snorkel-ai/senior-swe-bench-v2026.06.git";
 export const SENIOR_SWE_COMMIT = "1212f23a662d2e8d3f321b174735a80be1fdf2e2";
-export const SELECTION_SEED = "skillscope-senior-v1";
-export const PREPILOT_TASK_IDS = Object.freeze([
+export const SELECTION_SEED = "skillscope-senior-v2";
+export const PREPILOT_TASK_IDS_V1 = Object.freeze([
   "better-auth-fix-api-key-run",
   "posthog-fix-llm-gateway-add",
 ]);
+export const PREPILOT_TASK_IDS = Object.freeze([
+  "better-auth-fix-api-key-run",
+  "electric-fix-elixir-client-cache",
+]);
+export const ALL_PREPILOT_TASK_IDS = Object.freeze([...new Set([...PREPILOT_TASK_IDS_V1, ...PREPILOT_TASK_IDS])]);
 
 const FORBIDDEN_OUTPUT = /solution|oracle|leaderboard/i;
 const MAX_SAFE_TOML_PREFIX_BYTES = 128 * 1024;
@@ -193,7 +198,7 @@ export function rankFormalCandidates(tasks, { armPortTaskIds = [] } = {}) {
   const knownIds = new Set(tasks.map((task) => task.id));
   for (const id of armPortTaskIds) if (!knownIds.has(id)) throw new Error(`ARM_PORT task is absent from the pinned dataset: ${id}`);
   const armPort = new Set(armPortTaskIds);
-  const eligible = tasks.filter((task) => !PREPILOT_TASK_IDS.includes(task.id)
+  const eligible = tasks.filter((task) => !ALL_PREPILOT_TASK_IDS.includes(task.id)
     && task.segment === "investigate"
     && task.visibility === "public"
     && task.verifier.timeoutSec <= 600);

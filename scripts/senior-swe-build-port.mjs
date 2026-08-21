@@ -19,6 +19,12 @@ const RECIPES = Object.freeze({
     replacement: "RUN git fetch --depth=1 origin 423e9cf5e34736e945e06b1dfd1f87d156126089",
     reason: "unshallow download failed silently; fetch only the already-pinned base commit needed by the next reset",
   },
+  "electric-fix-elixir-client-cache": {
+    originalSha256: "79c1160ab9aa259f0c6403dc96379a7ea3160e5798a7dbf210ceba1ba0339533",
+    search: "RUN mix deps.get \\",
+    replacement: "RUN HEX_HTTP_CONCURRENCY=1 HEX_HTTP_TIMEOUT=120 mix deps.get \\",
+    reason: "Hex timed out fetching the locked pg_query_ex-0.9.0 tarball; use Hex's own recommended low-concurrency timeout settings without changing dependency identity",
+  },
 });
 
 const args = parseArgs(process.argv.slice(2));
