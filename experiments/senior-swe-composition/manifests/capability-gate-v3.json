@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "skillscope.senior-swe.capability-gate-manifest.v3",
+  "protocolVersion": "senior-swe-composition.scripted.v3",
+  "implementationCommit": "28b3f78f958e738ff6ad04c90355cd8fedc080f1",
+  "implementationDirty": false,
+  "dataset": {
+    "repository": "https://github.com/snorkel-ai/senior-swe-bench-v2026.06.git",
+    "version": "v2026.06.2",
+    "commit": "1212f23a662d2e8d3f321b174735a80be1fdf2e2"
+  },
+  "model": {
+    "provider": "opencode-go",
+    "id": "deepseek-v4-flash",
+    "api": "openai-completions",
+    "baseUrl": "https://opencode.ai/zen/go/v1",
+    "temperature": 0
+  },
+  "seed": 20260822,
+  "stageOrder": ["investigate", "implement", "review", "repair"],
+  "budget": {
+    "workMaxTurns": 40,
+    "workMaxToolCalls": 40,
+    "workTimeoutMs": 480000,
+    "checkpointMaxTurns": 4,
+    "checkpointMaxToolCalls": 1,
+    "checkpointTimeoutMs": 120000,
+    "stageTotalTimeoutMs": 600000,
+    "taskArmTimeoutMs": 2700000
+  },
+  "sourceHashes": {
+    "liveHarnessSha256": "53d8d7a41e425e96315fe937081df5ef71cdf53d38ada216851d26c3e68068f5",
+    "protocolSha256": "a271730906e4cc72791a35eb73911f49dad603ccb712c090694ccbb29c1c1dd7",
+    "cliSha256": "d1be350dc1e1267cb902498cc63536b7402b940d37a7781f44a4a5876c62907f",
+    "preregistrationSha256": "fb7ac5edc263d52d8b18211131dcb3d40cc1a9b3ef67b05730a1d71b4780f394"
+  },
+  "task": {
+    "taskId": "electric-fix-elixir-client-cache",
+    "repo": "electric",
+    "language": "elixir",
+    "repoPath": "/repo/electric",
+    "instructionSha256": "701095e6bdbebb386c2ef73e5164f9f6a7b9c40965725e4ab799393dcb40fd92",
+    "environmentClass": "ENV_BUILD_PORT",
+    "excludedFromFormal": true,
+    "solverImage": "skillscope-senior:electric-fix-elixir-client-cache-port",
+    "solverImageId": "sha256:ab6d3b876c8b8a4c7a8e8acaa0efac6b2c0d2e1be010724b2c0c263477cd2edc",
+    "verifierImage": "skillscope-senior:electric-fix-elixir-client-cache-verifier",
+    "verifierImageId": "sha256:6fc9236e3355b85a6fc339f5e2ad0061f9281437558c778f0471525f36124a5b",
+    "qualification": {
+      "repeats": 3,
+      "noopPassed": 1,
+      "noopTotal": 4,
+      "goldPassed": 4,
+      "goldTotal": 4,
+      "stable": true
+    }
+  },
+  "executionPolicy": "Run each gate only if every prior gate passed; stop on ordinary capability or harness failure",
+  "jobs": [
+    {
+      "gate": "A",
+      "label": "gate-a-electric-composed-investigate",
+      "jobId": "job_7d54198ac1ceba55666e",
+      "taskId": "electric-fix-elixir-client-cache",
+      "arm": "COMPOSED_DISPOSABLE",
+      "stageLimit": 1,
+      "seed": 20260822,
+      "orderKey": "7d54198ac1ceba55666eb9afb2bd9e85fc6a456d9161e9da44d06ff416ce1e83"
+    },
+    {
+      "gate": "B",
+      "label": "gate-b-electric-composed-full",
+      "jobId": "job_c05e2a33fc29cf9e8ba0",
+      "taskId": "electric-fix-elixir-client-cache",
+      "arm": "COMPOSED_DISPOSABLE",
+      "stageLimit": 4,
+      "seed": 20260822,
+      "orderKey": "c05e2a33fc29cf9e8ba0de9853218b152551b2dcc99574947173a0a0e5b64e88"
+    },
+    {
+      "gate": "C1",
+      "label": "gate-c1-electric-flat-full",
+      "jobId": "job_22a2e5b89cfb990cf2b4",
+      "taskId": "electric-fix-elixir-client-cache",
+      "arm": "FLAT_DISPOSABLE",
+      "stageLimit": 4,
+      "seed": 20260822,
+      "orderKey": "22a2e5b89cfb990cf2b430e2531d1eed26a0c3d0efa0945303c21aa1b62bda31"
+    },
+    {
+      "gate": "C2",
+      "label": "gate-c2-electric-inline-full",
+      "jobId": "job_af6540afb7ff42e0874c",
+      "taskId": "electric-fix-elixir-client-cache",
+      "arm": "INLINE_PERSISTENT",
+      "stageLimit": 4,
+      "seed": 20260822,
+      "orderKey": "af6540afb7ff42e0874c4b09b5f3039b096b6a949082cf7e49ff36589daa29db"
+    }
+  ]
+}
