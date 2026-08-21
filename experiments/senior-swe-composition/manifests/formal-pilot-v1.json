@@ -1,0 +1,413 @@
+{
+  "schemaVersion": "skillscope.senior-swe.formal-manifest.v1",
+  "protocolVersion": "senior-swe-composition.scripted.v3",
+  "implementationCommit": "f927958e040e2d093657435472b052276276656b",
+  "implementationDirty": false,
+  "createdAt": "2026-08-21T20:38:15.280Z",
+  "dataset": {
+    "repository": "https://github.com/snorkel-ai/senior-swe-bench-v2026.06.git",
+    "version": "v2026.06.2",
+    "commit": "1212f23a662d2e8d3f321b174735a80be1fdf2e2"
+  },
+  "model": {
+    "provider": "opencode-go",
+    "id": "deepseek-v4-flash",
+    "api": "openai-completions",
+    "baseUrl": "https://opencode.ai/zen/go/v1",
+    "temperature": 0
+  },
+  "repeats": 2,
+  "stageOrder": [
+    "investigate",
+    "implement",
+    "review",
+    "repair"
+  ],
+  "stageBudget": {
+    "totalTimeoutMs": 600000,
+    "work": {
+      "maxTurns": 40,
+      "maxToolCalls": 40,
+      "timeoutMs": 480000
+    },
+    "checkpoint": {
+      "maxTurns": 4,
+      "maxToolCalls": 1,
+      "timeoutMs": 120000
+    },
+    "maxResultBytes": 32768,
+    "taskArmTimeoutMs": 2700000
+  },
+  "sourceHashes": {
+    "liveHarnessSha256": "8b256ae5046c99fdb9bc911030d301c38b55189c7e4cc15c431564439b99cd7d",
+    "protocolSha256": "a271730906e4cc72791a35eb73911f49dad603ccb712c090694ccbb29c1c1dd7",
+    "selectorSha256": "55a978e93e42b6b9dade79d6a4871756ecfa20fb3f7b1929d45d6050f4fce1e3",
+    "formalManifestGeneratorSha256": "9c19859471549e57bbee50978eb5a897b437764c4a611d63bfae7c5bf7600dd0",
+    "environmentPortBuilderSha256": "5b9c6dd698685f59608866310871e742b80456d3d0fec7b83b17e5e0615ae608",
+    "verifierImageBuilderSha256": "73b13b3b89dd89ca1566a6b86af4425121fda79cb49922ecfdffd84386c5610e",
+    "preregistrationSha256": "e45d72ec1699f8b09709fec1cf5a024ef70a9b45a7880b7b87b80d99adbffd91"
+  },
+  "selection": {
+    "rule": "first four qualification-passing, repo-distinct tasks in the preregistered candidate order",
+    "candidateOrder": [
+      "prefect-fix-resolve-race-condition",
+      "firezone-fix-connlib-align-device",
+      "better-auth-fix-resolve-dynamic-baseurl",
+      "electric-perf-array-filter-eval",
+      "paperless-ngx-perf-document-counts",
+      "prefect-fix-task-run-recorder",
+      "paperless-ngx-perf-workflow-queries",
+      "better-auth-fix-oauth-provider-return",
+      "electric-fix-resolve-pending-shapes",
+      "better-auth-fix-api-return-response",
+      "gitea-fix-codeql-code-scanning",
+      "gitea-fix-force-push-timeline",
+      "gitea-fix-diff-highlight-overlap"
+    ],
+    "candidateOrderHash": "8cfd21f90c0cb72ae8dd8270f512b5a88ab2a5f4117ba7bcd7f0ad7f993e94a8",
+    "selectedTaskIds": [
+      "prefect-fix-resolve-race-condition",
+      "firezone-fix-connlib-align-device",
+      "better-auth-fix-resolve-dynamic-baseurl",
+      "electric-perf-array-filter-eval"
+    ]
+  },
+  "tasks": {
+    "prefect-fix-resolve-race-condition": {
+      "repo": "prefect",
+      "language": "python",
+      "repoPath": "/repo/prefect",
+      "instructionSha256": "44543aae6560b3dbc04dabd46f7e3514155f48450a840bec3b19ed1bab0de865",
+      "environmentClass": "ENV_BUILD_PORT",
+      "environmentPort": {
+        "schemaVersion": "skillscope.senior-swe.environment-port.v1",
+        "taskId": "prefect-fix-resolve-race-condition",
+        "originalSha256": "e2c38bcdd460ce8669e4cd36fcf7f20fee32a1a72184bb71bc3abc1795f75bdd",
+        "derivedSha256": "ba91a9b45e114cb680fec94ff44755d3867ab64e4f85c6165ad23a8086a2d03b",
+        "replacementSha256": "f2cb6da080f53b2ebe20531d3256a648a282ec0dfa88e4e3243b536c2c13055b",
+        "reason": "the upstream image defers its locked dev dependency group to networked test setup; cache that same uv.lock group so all three arms and the verifier can replay offline",
+        "image": "skillscope-senior:prefect-fix-resolve-race-condition-solver",
+        "buildNetwork": "host"
+      },
+      "solverImage": "skillscope-senior:prefect-fix-resolve-race-condition-solver",
+      "solverImageId": "sha256:58af9b897baa191ab3708125c9b9a647f5f67fdc3083198a032cd29666855400",
+      "verifierImage": "skillscope-senior:prefect-fix-resolve-race-condition-verifier",
+      "verifierImageId": "sha256:45939c0acbfe7eea3a2e78b0f85d099bd85174939dd46ec229994bb80c33b34f",
+      "qualificationRecordSha256": "01521008d6fe5cd92a3a6a94e16d832795c2400de2df59114e3a4b60d19f79ff",
+      "qualification": {
+        "repeats": 3,
+        "noopScores": [
+          "2/3",
+          "2/3",
+          "2/3"
+        ],
+        "goldScores": [
+          "3/3",
+          "3/3",
+          "3/3"
+        ],
+        "infrastructureValid": true,
+        "stablePolarity": true
+      }
+    },
+    "firezone-fix-connlib-align-device": {
+      "repo": "firezone",
+      "language": "rust",
+      "repoPath": "/repo/firezone",
+      "instructionSha256": "87740983b79737f53b97aa88b3eb07139d2055dc5e29edb4377d327fa25b4928",
+      "environmentClass": "NATIVE_ARM",
+      "environmentPort": null,
+      "solverImage": "skillscope-senior:firezone-fix-connlib-align-device-solver",
+      "solverImageId": "sha256:2dc356823e15db880a37e8043690c54fdcb7aa671abb9639e1cf9adba770b4d1",
+      "verifierImage": "skillscope-senior:firezone-fix-connlib-align-device-verifier",
+      "verifierImageId": "sha256:3e1dac89e272b529af7953aa28b0fdaa4193c78544b740854b196179a5d6b630",
+      "qualificationRecordSha256": "433fbde7bdcb1b49e28c6b8064f71d5a4e7492d14efbe95d034681cec003ce8d",
+      "qualification": {
+        "repeats": 3,
+        "noopScores": [
+          "1/4",
+          "1/4",
+          "1/4"
+        ],
+        "goldScores": [
+          "4/4",
+          "4/4",
+          "4/4"
+        ],
+        "infrastructureValid": true,
+        "stablePolarity": true
+      }
+    },
+    "better-auth-fix-resolve-dynamic-baseurl": {
+      "repo": "better-auth",
+      "language": "typescript",
+      "repoPath": "/repo/better-auth",
+      "instructionSha256": "2dcf06c64b189741ee28504487bca1ca17d0b92dcabce7612e7002cc03bd814b",
+      "environmentClass": "ENV_BUILD_PORT",
+      "environmentPort": {
+        "schemaVersion": "skillscope.senior-swe.environment-port.v1",
+        "taskId": "better-auth-fix-resolve-dynamic-baseurl",
+        "originalSha256": "fe434a8dbdc87a3858c27e100d9ff8b79631150e6d4a291b1616f0965b0aec78",
+        "derivedSha256": "e83958e17792ad8c54e267bc88ba0e618af38296c07a7af37228c67c7d494e93",
+        "replacementSha256": "a721f51406f8e94a741740bc2bbfdcc9b26af03efa2998c07c362a7b7043aaa0",
+        "reason": "the byte-identical install step already exceeded the build budget in the same pinned Better Auth environment; fetch the identical versioned tarball directly",
+        "image": "skillscope-senior:better-auth-fix-resolve-dynamic-baseurl-solver",
+        "buildNetwork": "host"
+      },
+      "solverImage": "skillscope-senior:better-auth-fix-resolve-dynamic-baseurl-solver",
+      "solverImageId": "sha256:782776f5a979db00887706a6b332a303c1d0024f2075e714a906ff5370b82831",
+      "verifierImage": "skillscope-senior:better-auth-fix-resolve-dynamic-baseurl-verifier",
+      "verifierImageId": "sha256:5e30ec21d7b6f1ce9ec31857c386290a1edb05ff9592210ee0e516d99fd51eba",
+      "qualificationRecordSha256": "5ca36d43203117e3d2fa21e1ae7f2cf9c16fa7f00d33c244af396efa95524e20",
+      "qualification": {
+        "repeats": 3,
+        "noopScores": [
+          "2/7",
+          "2/7",
+          "2/7"
+        ],
+        "goldScores": [
+          "7/7",
+          "7/7",
+          "7/7"
+        ],
+        "infrastructureValid": true,
+        "stablePolarity": true
+      }
+    },
+    "electric-perf-array-filter-eval": {
+      "repo": "electric",
+      "language": "elixir",
+      "repoPath": "/repo/electric",
+      "instructionSha256": "4a0d44e8f8ae55d2898aa98c04388168def93748f1b1032f7fef6a17660c0712",
+      "environmentClass": "ENV_BUILD_PORT",
+      "environmentPort": {
+        "schemaVersion": "skillscope.senior-swe.environment-port.v1",
+        "taskId": "electric-perf-array-filter-eval",
+        "originalSha256": "99f628d470568bd6cbfed272d425fd8b40b1f00460ae98a22c047323124da467",
+        "derivedSha256": "5803b709ed99487caf2decd310060b0adbbfb2d7f5c339fb511940f366cdc16e",
+        "replacementSha256": "a1cf052c8a4ff2118111d2c7ac2c720498a42a588897a79345f0351097423bec",
+        "reason": "the same pinned Electric/Hex fetch step already timed out in the prepilot environment; use Hex's recommended low-concurrency timeout settings without changing dependency identity",
+        "image": "skillscope-senior:electric-perf-array-filter-eval-solver",
+        "buildNetwork": "host"
+      },
+      "solverImage": "skillscope-senior:electric-perf-array-filter-eval-solver",
+      "solverImageId": "sha256:9b7785eea1d3cdca079c322ee4041b198ff0f8d995c620318fd998176cf8215c",
+      "verifierImage": "skillscope-senior:electric-perf-array-filter-eval-verifier",
+      "verifierImageId": "sha256:9a27730ea1b77542cc68f8e683c1c99201a10e8abdd7d82bc2bc3cbd027251c8",
+      "qualificationRecordSha256": "fc0d97a501143370d5c86a9263e4f93074377f058fcc6e8e16c39feb65632508",
+      "qualification": {
+        "repeats": 3,
+        "noopScores": [
+          "4/6",
+          "4/6",
+          "4/6"
+        ],
+        "goldScores": [
+          "6/6",
+          "6/6",
+          "6/6"
+        ],
+        "infrastructureValid": true,
+        "stablePolarity": true
+      }
+    }
+  },
+  "seedRule": "first 52 bits of sha256(skillscope-senior-formal-v1:<taskId>:<repeat>)",
+  "orderRule": "ascending sha256(skillscope-senior-formal-v1:job:<taskId>:<repeat>:<arm>:<seed>)",
+  "orderHash": "48ebdfc4b13a952e821ed3f6d4f8d4c37b3c232fe4dde4b75c82aa9af91d8f24",
+  "jobs": [
+    {
+      "jobId": "job_185f5d7705236206ae18",
+      "taskId": "better-auth-fix-resolve-dynamic-baseurl",
+      "repeat": 0,
+      "arm": "INLINE_PERSISTENT",
+      "seed": 784791367885656,
+      "orderKey": "185f5d7705236206ae18a1d8b3134febf9f780a11bcddfb7cff60c1c9ae7eb03"
+    },
+    {
+      "jobId": "job_25c2760ff900940f986b",
+      "taskId": "better-auth-fix-resolve-dynamic-baseurl",
+      "repeat": 1,
+      "arm": "INLINE_PERSISTENT",
+      "seed": 2722198682839054,
+      "orderKey": "25c2760ff900940f986bb03b04b1b699b3f4de76e5f9d515791c45d3acaaa525"
+    },
+    {
+      "jobId": "job_274893aad9b08f24a3c9",
+      "taskId": "better-auth-fix-resolve-dynamic-baseurl",
+      "repeat": 1,
+      "arm": "FLAT_DISPOSABLE",
+      "seed": 2722198682839054,
+      "orderKey": "274893aad9b08f24a3c95675493e8b0f3b1eb2110359e4fc3971736c5daa1e36"
+    },
+    {
+      "jobId": "job_2b9e2feadabcea98740d",
+      "taskId": "firezone-fix-connlib-align-device",
+      "repeat": 0,
+      "arm": "COMPOSED_DISPOSABLE",
+      "seed": 1366148637671285,
+      "orderKey": "2b9e2feadabcea98740d4b0a126197de889cd15529b700b49280016c2b0b22d5"
+    },
+    {
+      "jobId": "job_2ed73813d97ea2ccfbb0",
+      "taskId": "firezone-fix-connlib-align-device",
+      "repeat": 1,
+      "arm": "INLINE_PERSISTENT",
+      "seed": 3993109975880309,
+      "orderKey": "2ed73813d97ea2ccfbb0b55f7cd2e1872d78cb07a31b8e92f1ad6ac7e1ca2c34"
+    },
+    {
+      "jobId": "job_39adc5b5179824308f95",
+      "taskId": "electric-perf-array-filter-eval",
+      "repeat": 1,
+      "arm": "FLAT_DISPOSABLE",
+      "seed": 3919415652565082,
+      "orderKey": "39adc5b5179824308f95d49eec074448d948af32f1cf70d34c79b20946dcd288"
+    },
+    {
+      "jobId": "job_49d1709b6af7c19d4695",
+      "taskId": "electric-perf-array-filter-eval",
+      "repeat": 1,
+      "arm": "INLINE_PERSISTENT",
+      "seed": 3919415652565082,
+      "orderKey": "49d1709b6af7c19d4695218abcacf563616e9441bcec48d9d88ca5c55cbab3e6"
+    },
+    {
+      "jobId": "job_7cbbb75f4dc6d3680850",
+      "taskId": "electric-perf-array-filter-eval",
+      "repeat": 1,
+      "arm": "COMPOSED_DISPOSABLE",
+      "seed": 3919415652565082,
+      "orderKey": "7cbbb75f4dc6d368085017f361915b33cde4a49b2533bce12a162786dd6cdd90"
+    },
+    {
+      "jobId": "job_7d826741fe7adf34e64c",
+      "taskId": "prefect-fix-resolve-race-condition",
+      "repeat": 0,
+      "arm": "COMPOSED_DISPOSABLE",
+      "seed": 267938686964003,
+      "orderKey": "7d826741fe7adf34e64cdc6c5ae758ead0d58387fe65d91a11d4d3581cb5677a"
+    },
+    {
+      "jobId": "job_7d926fc82f78f6e9080e",
+      "taskId": "prefect-fix-resolve-race-condition",
+      "repeat": 1,
+      "arm": "COMPOSED_DISPOSABLE",
+      "seed": 3353056016495207,
+      "orderKey": "7d926fc82f78f6e9080e3e77c721cb42cc663b9d21cf3eff7364ea1b9e518578"
+    },
+    {
+      "jobId": "job_8b7502cfc1b2255f926f",
+      "taskId": "better-auth-fix-resolve-dynamic-baseurl",
+      "repeat": 0,
+      "arm": "COMPOSED_DISPOSABLE",
+      "seed": 784791367885656,
+      "orderKey": "8b7502cfc1b2255f926ff6af0ba5002d21425772d16a8340c590387e61ec460e"
+    },
+    {
+      "jobId": "job_a28f79d823ba5c201d1c",
+      "taskId": "prefect-fix-resolve-race-condition",
+      "repeat": 0,
+      "arm": "FLAT_DISPOSABLE",
+      "seed": 267938686964003,
+      "orderKey": "a28f79d823ba5c201d1c7631a84773f8881d884d77bad36224bc013ba49594b7"
+    },
+    {
+      "jobId": "job_a5ee0ebf27c996f107c2",
+      "taskId": "prefect-fix-resolve-race-condition",
+      "repeat": 1,
+      "arm": "INLINE_PERSISTENT",
+      "seed": 3353056016495207,
+      "orderKey": "a5ee0ebf27c996f107c203c2fc9f033790b9881ec15f697fa550b72151a8f0d6"
+    },
+    {
+      "jobId": "job_abdd5d3b3677f3e5de34",
+      "taskId": "firezone-fix-connlib-align-device",
+      "repeat": 0,
+      "arm": "FLAT_DISPOSABLE",
+      "seed": 1366148637671285,
+      "orderKey": "abdd5d3b3677f3e5de34f37cfd8472ecdd9079c94c9124303c809befcec7a67c"
+    },
+    {
+      "jobId": "job_bd85b09037d28acb5fbc",
+      "taskId": "electric-perf-array-filter-eval",
+      "repeat": 0,
+      "arm": "INLINE_PERSISTENT",
+      "seed": 1626851014133974,
+      "orderKey": "bd85b09037d28acb5fbc39666c475624ae57db40dd396184fcfcfb3f6e4a01ec"
+    },
+    {
+      "jobId": "job_c3ce69f54815fa351e19",
+      "taskId": "prefect-fix-resolve-race-condition",
+      "repeat": 0,
+      "arm": "INLINE_PERSISTENT",
+      "seed": 267938686964003,
+      "orderKey": "c3ce69f54815fa351e193ef55caf3d29be0cb4a5e6a4451987520a551075c06b"
+    },
+    {
+      "jobId": "job_d6610ae627f61adb6aa4",
+      "taskId": "prefect-fix-resolve-race-condition",
+      "repeat": 1,
+      "arm": "FLAT_DISPOSABLE",
+      "seed": 3353056016495207,
+      "orderKey": "d6610ae627f61adb6aa4b80284d85299a10cf5d26d1ded217a8ccb63f21ddeed"
+    },
+    {
+      "jobId": "job_d9680b71103a9d303017",
+      "taskId": "firezone-fix-connlib-align-device",
+      "repeat": 0,
+      "arm": "INLINE_PERSISTENT",
+      "seed": 1366148637671285,
+      "orderKey": "d9680b71103a9d3030175eca3ea714fd19bcaf9b4e0ac206fa7a696f28ba4efa"
+    },
+    {
+      "jobId": "job_dadda08a2083e1c012e0",
+      "taskId": "electric-perf-array-filter-eval",
+      "repeat": 0,
+      "arm": "COMPOSED_DISPOSABLE",
+      "seed": 1626851014133974,
+      "orderKey": "dadda08a2083e1c012e0dd6dd82ee19bf569c7ad94c72c77ad557b9110544d49"
+    },
+    {
+      "jobId": "job_e1aeece2c3656b3d6f31",
+      "taskId": "firezone-fix-connlib-align-device",
+      "repeat": 1,
+      "arm": "FLAT_DISPOSABLE",
+      "seed": 3993109975880309,
+      "orderKey": "e1aeece2c3656b3d6f3148230d24ef671dd32139f39eb742e4d4e0615d468dca"
+    },
+    {
+      "jobId": "job_e4aa8b4a80101884d4c0",
+      "taskId": "electric-perf-array-filter-eval",
+      "repeat": 0,
+      "arm": "FLAT_DISPOSABLE",
+      "seed": 1626851014133974,
+      "orderKey": "e4aa8b4a80101884d4c069014e5f556a97d43300e954b44ce307ac6fc8443231"
+    },
+    {
+      "jobId": "job_ef796238eb5b7dc865dd",
+      "taskId": "better-auth-fix-resolve-dynamic-baseurl",
+      "repeat": 1,
+      "arm": "COMPOSED_DISPOSABLE",
+      "seed": 2722198682839054,
+      "orderKey": "ef796238eb5b7dc865dd5f2cf68d03adb5be2ab33fc3f560f623951f997f219a"
+    },
+    {
+      "jobId": "job_f3b1ca35846f9ef85944",
+      "taskId": "better-auth-fix-resolve-dynamic-baseurl",
+      "repeat": 0,
+      "arm": "FLAT_DISPOSABLE",
+      "seed": 784791367885656,
+      "orderKey": "f3b1ca35846f9ef859440f551f126330d2c362be0f75e5a4e1f24c220f2c40e1"
+    },
+    {
+      "jobId": "job_f46d7f21e469b2ca2066",
+      "taskId": "firezone-fix-connlib-align-device",
+      "repeat": 1,
+      "arm": "COMPOSED_DISPOSABLE",
+      "seed": 3993109975880309,
+      "orderKey": "f46d7f21e469b2ca2066ed05621618721854f8584060e7646095c7c0f1a0faaf"
+    }
+  ]
+}

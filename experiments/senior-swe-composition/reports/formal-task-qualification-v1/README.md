@@ -2,7 +2,7 @@
 
 日期：2026-08-22（Asia/Shanghai）
 
-状态：**4/4 任务资格通过；正式任务集已机械选定；正式模型尚未调用**
+状态：**4/4 任务资格通过；正式任务集与24-job manifest已冻结；正式模型尚未调用**
 
 ## 结论
 
@@ -69,6 +69,15 @@
 
 主要观察不是“谁更像 subagent”，而是组合边界是否同时做到：父上下文更小、持久 worker/coordinator 上下文更小、四阶段和原生判分不更差、同题两次更一致。比较以 task-repeat 配对进行；如果上下文下降但完成率或原生成绩下降，就明确报告为交换成本。
 
+一次性正式清单为 `experiments/senior-swe-composition/manifests/formal-pilot-v1.json`：
+
+- clean implementation commit：`f927958e040e2d093657435472b052276276656b`
+- manifest SHA-256：`05fff665eb3dfbf5998c905c7924349d49a0df2890cfda7d81eb6ac0b9192e2a`
+- 24-job order hash：`48ebdfc4b13a952e821ed3f6d4f8d4c37b3c232fe4dde4b75c82aa9af91d8f24`
+- candidate-order hash：`8cfd21f90c0cb72ae8dd8270f512b5a88ab2a5f4117ba7bcd7f0ad7f993e94a8`
+
+生成器要求 clean worktree，并逐项拒绝候选顺序漂移、资格少于三轮、no-op/gold极性错误、非ARM64或缺失镜像、任务集不是前四个repo互异通过项。清单用独占创建模式落盘，避免静默覆盖。
+
 ## 预实验给出的可行性证据
 
 v2 的六条真实运行证明 disposable 方案能把父末态缩小约99.36%，但三臂都未形成第一个 typed checkpoint，不能比较任务表现。v3 在同一永久排除任务上加入三臂一致的 Runtime checkpoint 后，Inline、Flat、Composed 3/3 都完成四阶段、形成非空 patch 并进入有效原生 verifier；完整链路中位约12.8分钟。
@@ -77,4 +86,4 @@ v2 的六条真实运行证明 disposable 方案能把父末态缩小约99.36%�
 
 ## 当前边界
 
-本报告只证明任务真实、环境可重放、判分有稳定极性，以及24-job设计可执行。它不包含正式模型效果，也不能从四道任务声称普遍优越。正式模型调用只能在 clean implementation commit 与一次性 manifest 落盘后开始。
+本报告只证明任务真实、环境可重放、判分有稳定极性，以及24-job设计可执行。它不包含正式模型效果，也不能从四道任务声称普遍优越。正式模型调用现在具备启动条件，但本轮没有把计划项冒充已执行结果。
