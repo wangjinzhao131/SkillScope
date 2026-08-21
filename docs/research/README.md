@@ -15,6 +15,7 @@
 | [SkillScope组合拓扑实验人工复核](../../experiments/composition-topology/reports/latest/README.md) | 72-job live结果：方向匹配与自适应机制有效，但负对照与provenance稳定性门失败，不能声称普遍稳定性提升 |
 | [SkillScope路由权责实验预注册_v1.md](./SkillScope路由权责实验预注册_v1.md) | 当前后续：固定Runtime自动child-evidence binding，只比较模型路由与作者声明/Runtime侧路由的36-trial配对设计 |
 | [SkillScope路由权责实验人工复核](../../experiments/routing-authority/reports/latest/README.md) | 36-trial结果：Runtime声明路由17/18、模型路由15/18；自动child evidence 36/36有效，另保留leaf执行波动与外推边界 |
+| [Senior SWE真实任务Skill组合实验预注册_v1.md](./SeniorSWE真实任务Skill组合实验预注册_v1.md) | 当前真实任务主线：固定Senior SWE-Bench v2026.06.2，比较Inline、单worker和main＋四个独立销毁leaf对父上下文与长程稳定性的影响 |
 | [Schema 2 Pilot v1 人工复核](../../experiments/access-frontier/reports/schema2-pilot-v1/README.md) | 70-job 五条件结果、forced-undergrant 机制结果、artifact hashes、失败审阅与严格推断边界 |
 | [High-search-entropy Pilot 人工复核](../../experiments/access-frontier/reports/entropy-frontier-v1/README.md) | 50-job 父搜索句柄、分片导航、调用预算与 planner 结果；含 reporting amendment |
 | [Planner output-budget probe 人工复核](../../experiments/access-frontier/reports/planner-budget-v1/README.md) | 60-trial planner-only 结果；区分 forced-tool 协议完成、catalog 宽度、预算与实际选择性 |
