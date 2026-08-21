@@ -21,6 +21,7 @@
 | [Senior SWE结构化收口能力预注册_v3.md](./SeniorSWE结构化收口能力预注册_v3.md) | v2失败后的最小能力门：Runtime收窄为completion-only，先用Electric逐级验证首阶段、完整Composed及三臂可比性 |
 | [Senior SWE v3能力门结果](../../experiments/senior-swe-composition/reports/capability-gate-v3/README.md) | Runtime checkpoint使三臂3/3完成四阶段并进入原生verifier；只证明可比较，不把单次分数当效果结论 |
 | [Senior SWE正式Pilot预注册_v1.md](./SeniorSWE正式Pilot预注册_v1.md) | 4个repo互异真实任务×3臂×2重复；按冻结顺序先做断网gold/no-op资格，任务集不按模型成绩挑选 |
+| [Senior SWE正式任务资格结果](../../experiments/senior-swe-composition/reports/formal-task-qualification-v1/README.md) | 冻结顺序前四题3×no-op/gold均稳定通过，任务集固定为Prefect、Firezone、Better Auth、Electric |
 | [Schema 2 Pilot v1 人工复核](../../experiments/access-frontier/reports/schema2-pilot-v1/README.md) | 70-job 五条件结果、forced-undergrant 机制结果、artifact hashes、失败审阅与严格推断边界 |
 | [High-search-entropy Pilot 人工复核](../../experiments/access-frontier/reports/entropy-frontier-v1/README.md) | 50-job 父搜索句柄、分片导航、调用预算与 planner 结果；含 reporting amendment |
 | [Planner output-budget probe 人工复核](../../experiments/access-frontier/reports/planner-budget-v1/README.md) | 60-trial planner-only 结果；区分 forced-tool 协议完成、catalog 宽度、预算与实际选择性 |

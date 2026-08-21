@@ -7,11 +7,22 @@ import { join, resolve } from "node:path";
 import { assertPinnedSeniorDataset } from "../experiments/senior-swe-composition/src/selector.mjs";
 
 const RECIPES = Object.freeze({
+  "prefect-fix-resolve-race-condition": {
+    originalSha256: "e2c38bcdd460ce8669e4cd36fcf7f20fee32a1a72184bb71bc3abc1795f75bdd",
+    append: "\n# Cache the public verifier's locked dev dependency group for offline replay.\nRUN cd /repo/prefect && uv sync --frozen --group dev\n",
+    reason: "the upstream image defers its locked dev dependency group to networked test setup; cache that same uv.lock group so all three arms and the verifier can replay offline",
+  },
   "better-auth-fix-api-key-run": {
     originalSha256: "7778c95d72a4797520e8b4b0317e5828f1beb28c9aea15b46e54da69c175b2ff",
     search: "RUN npm install -g pnpm@${PNPM_VERSION}",
     replacement: "RUN curl -fsSL \"https://registry.npmjs.org/pnpm/-/pnpm-${PNPM_VERSION}.tgz\" -o /tmp/pnpm.tgz && npm install -g /tmp/pnpm.tgz && rm /tmp/pnpm.tgz",
     reason: "npm registry client stalled on the pinned pnpm tarball; fetch the identical versioned tarball directly",
+  },
+  "better-auth-fix-resolve-dynamic-baseurl": {
+    originalSha256: "fe434a8dbdc87a3858c27e100d9ff8b79631150e6d4a291b1616f0965b0aec78",
+    search: "RUN npm install -g pnpm@${PNPM_VERSION}",
+    replacement: "RUN curl -fsSL \"https://registry.npmjs.org/pnpm/-/pnpm-${PNPM_VERSION}.tgz\" -o /tmp/pnpm.tgz && npm install -g /tmp/pnpm.tgz && rm /tmp/pnpm.tgz",
+    reason: "the byte-identical install step already exceeded the build budget in the same pinned Better Auth environment; fetch the identical versioned tarball directly",
   },
   "posthog-fix-llm-gateway-add": {
     originalSha256: "471d12cc71370969f8f8b7229e6a6d07b4c78d65009034084bab54d81107e519",
@@ -24,6 +35,12 @@ const RECIPES = Object.freeze({
     search: "RUN mix deps.get \\",
     replacement: "RUN HEX_HTTP_CONCURRENCY=1 HEX_HTTP_TIMEOUT=120 mix deps.get \\",
     reason: "Hex timed out fetching the locked pg_query_ex-0.9.0 tarball; use Hex's own recommended low-concurrency timeout settings without changing dependency identity",
+  },
+  "electric-perf-array-filter-eval": {
+    originalSha256: "99f628d470568bd6cbfed272d425fd8b40b1f00460ae98a22c047323124da467",
+    search: "RUN mix deps.get \\",
+    replacement: "RUN HEX_HTTP_CONCURRENCY=1 HEX_HTTP_TIMEOUT=120 mix deps.get \\",
+    reason: "the same pinned Electric/Hex fetch step already timed out in the prepilot environment; use Hex's recommended low-concurrency timeout settings without changing dependency identity",
   },
 });
 
@@ -40,15 +57,15 @@ const dockerfilePath = join(context, "Dockerfile");
 const original = await readFile(dockerfilePath, "utf8");
 const originalSha256 = sha256(original);
 if (originalSha256 !== recipe.originalSha256) throw new Error(`Dockerfile hash mismatch for ${taskId}`);
-if (original.split(recipe.search).length !== 2) throw new Error(`Expected exactly one audited replacement site for ${taskId}`);
-const derived = original.replace(recipe.search, recipe.replacement);
+const transformation = deriveDockerfile(original, recipe, taskId);
+const derived = transformation.derived;
 const identity = {
   schemaVersion: "skillscope.senior-swe.environment-port.v1",
   taskId,
   datasetRoot,
   originalSha256,
   derivedSha256: sha256(derived),
-  replacementSha256: sha256(`${recipe.search}\n=>\n${recipe.replacement}`),
+  replacementSha256: sha256(transformation.identity),
   reason: recipe.reason,
   image,
   buildNetwork: "host",
@@ -64,6 +81,15 @@ function dockerBuild({ context, image: imageName, dockerfile }) {
     child.once("error", rejectPromise);
     child.once("close", (code) => code === 0 ? resolvePromise() : rejectPromise(new Error(`docker build failed with exit code ${code}`)));
   });
+}
+function deriveDockerfile(original, recipe, taskId) {
+  if (recipe.append) {
+    if (recipe.search || recipe.replacement) throw new Error(`Ambiguous audited recipe for ${taskId}`);
+    return { derived: `${original.replace(/\n?$/u, "\n")}${recipe.append.replace(/^\n/u, "")}`, identity: `APPEND\n${recipe.append}` };
+  }
+  if (!recipe.search || !recipe.replacement) throw new Error(`Incomplete audited replacement recipe for ${taskId}`);
+  if (original.split(recipe.search).length !== 2) throw new Error(`Expected exactly one audited replacement site for ${taskId}`);
+  return { derived: original.replace(recipe.search, recipe.replacement), identity: `${recipe.search}\n=>\n${recipe.replacement}` };
 }
 function parseArgs(argv) {
   const result = {};
